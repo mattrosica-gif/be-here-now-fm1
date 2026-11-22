@@ -1,0 +1,10 @@
+{
+  "name": "BE HERE NOW",
+  "version": "0.1",
+  "identity": "FM-1_86",
+  "options": {
+    "usb_audio": false,
+    "trs_midi": true,
+    "midi_clock": false
+  }
+}
