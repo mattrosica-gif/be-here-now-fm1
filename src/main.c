@@ -511,20 +511,20 @@ static void draw_band(void) {
 
 static void draw_bead(int s) {
   int bx = bead_x[s], by = bead_y[s], px = bx >> 4, py = by >> 4;
-  if (!gfx_touches(px - 30, py - 30, px + 31, py + 31)) {
+  if (!gfx_touches(px - 24, py - 24, px + 25, py + 25)) {
     return;
   }
   int in = THAAT[cur.thaat].mask >> s & 1, p = cur.play[s], y = cur.symp[s];
   if (y) { /* a sympathetic string answering: a rose aura */
-    gfx_glow(px, py, 25, ROSE, y * 10);
+    gfx_glow(px, py, 20, ROSE, y * 12);
     gfx_ring(bx, by, BEAD_R * 16 + 40, 26, ROSE, y * 15 > 240 ? 240 : y * 15);
   }
   if (p) {
-    gfx_glow(px, py, 26, MARIGOLD, p * 11);
+    gfx_glow(px, py, 21, MARIGOLD, p * 13);
   }
   if (cur.ripple[s]) {
-    int r = BEAD_R * 16 + cur.ripple[s] * 22;
-    gfx_ring(bx, by, r, 20, MARIGOLD, 200 - cur.ripple[s] * 18);
+    int r = BEAD_R * 16 + cur.ripple[s] * 72;
+    gfx_ring(bx, by, r, 24, MARIGOLD, 220 - cur.ripple[s] * 70);
   }
   uint32_t ink;
   if (s == 0 || in) {
@@ -555,8 +555,7 @@ static void draw_letter(int s) {
   if (!gfx_touches(lx - 12, ly - 10, lx + 12, ly + 10)) {
     return;
   }
-  int p = cur.play[s];
-  gfx_text_c(&F_SMALL, lx, ly + 4, NOTE[(cur.sa + s) % 12], p ? mix(MIST, IVORY, p * 16) : mix(MIST, DUSK, 90), 256);
+  gfx_text_c(&F_SMALL, lx, ly + 4, NOTE[(cur.sa + s) % 12], cur.play[s] ? IVORY : mix(MIST, DUSK, 90), 256);
 }
 
 /* the chord's shape: its notes joined around the circle */
@@ -718,7 +717,7 @@ static void center_tip(void) {
 
 static void center_idle(void) {
   int b = (16384 - icos(cur.breath * 16)) >> 7; /* 0..256: in, then out */
-  gfx_glow(CX, CY, 22 + (b * 20 >> 8), mix(ROSE, IVORY, 120), 34 + (b * 46 >> 8));
+  gfx_glow(CX, CY, 22 + (b * 16 >> 8), mix(ROSE, IVORY, 120), 34 + (b * 46 >> 8));
   gfx_glow(CX, CY, 8 + (b * 8 >> 8), IVORY, 40 + (b * 40 >> 8));
   gfx_text_c(&F_BODY, CX, CY + 5, "be here now", IVORY, 200 + (b * 56 >> 8));
   gfx_text_c(&F_SMALL, CX, CY + 22, cur.breath < 32 ? "breathe in" : "breathe out", MIST, 140 + (b * 60 >> 8));
@@ -785,7 +784,7 @@ static void scene(void) {
     }
     if (cur.comet >= 0) {
       int x = CX * 16 + ((RING_R * 16 * isin(cur.comet)) >> 14), y = CY * 16 - ((RING_R * 16 * icos(cur.comet)) >> 14);
-      gfx_glow(x >> 4, y >> 4, 14, MARIGOLD, 200);
+      gfx_glow(x >> 4, y >> 4, 12, MARIGOLD, 210);
       gfx_disc(x, y, 56, WARM, 256);
     }
     if (gfx_touches(CX - 52, CY - 52, CX + 53, CY + 53)) {
@@ -811,15 +810,30 @@ static void scene(void) {
 
 /* ---- what changed since the last picture: mark only that for repainting */
 
-static void dirty_bead(int s) {
+static void dirty_bead(int s, int letter) {
   int px = bead_x[s] >> 4, py = bead_y[s] >> 4;
-  gfx_dirty(px - 28, py - 28, px + 29, py + 29);
-  int ang = bead_ang(s), lx = CX + ((LETTER_R * isin(ang)) >> 14), ly = CY - ((LETTER_R * icos(ang)) >> 14);
-  gfx_dirty(lx - 12, ly - 10, lx + 12, ly + 10);
+  gfx_dirty(px - 22, py - 22, px + 23, py + 23);
+  if (letter) {
+    int ang = bead_ang(s), lx = CX + ((LETTER_R * isin(ang)) >> 14), ly = CY - ((LETTER_R * icos(ang)) >> 14);
+    gfx_dirty(lx - 12, ly - 10, lx + 12, ly + 10);
+  }
 }
 static void dirty_ring_point(int ang, int pad) {
   int x = CX + ((RING_R * isin(ang)) >> 14), y = CY - ((RING_R * icos(ang)) >> 14);
   gfx_dirty(x - pad, y - pad, x + pad + 1, y + pad + 1);
+}
+/* the part of the ring between two angles (0..1023, a0 <= a1): the box around its ends and any quarter-points between */
+static void dirty_arc(int a0, int a1) {
+  int x0 = 999, y0 = 999, x1 = -999, y1 = -999;
+  for (int k = 0; k < 6; k++) {
+    int ang = k == 0 ? a0 : k == 1 ? a1 : (k - 2) * 256;
+    if (k >= 2 && (ang < a0 || ang > a1)) {
+      continue;
+    }
+    int x = CX + ((RING_R * isin(ang)) >> 14), y = CY - ((RING_R * icos(ang)) >> 14);
+    x0 = x < x0 ? x : x0, y0 = y < y0 ? y : y0, x1 = x > x1 ? x : x1, y1 = y > y1 ? y : y1;
+  }
+  gfx_dirty(x0 - 6, y0 - 6, x1 + 7, y1 + 7);
 }
 static void dirty_center(void) { gfx_dirty(CX - 52, CY - 52, CX + 53, CY + 53); }
 static void dirty_wheel(void) { gfx_dirty(CX - 92, CY - 92, CX + 93, CY + 93); }
@@ -844,29 +858,34 @@ static void repaint_changes(void) {
       gfx_dirty(206 + s * 5, 206, 227 + s * 5, SCREEN_H);
     }
   }
-  if (a->chord_pcs != b->chord_pcs) {
-    dirty_wheel();
+  if (a->chord_pcs != b->chord_pcs) { /* the box around every corner of the old shape and the new one */
+    uint16_t m = a->chord_pcs | b->chord_pcs;
+    int x0 = 999, y0 = 999, x1 = -999, y1 = -999;
+    for (int s = 0; s < 12; s++) {
+      if (m >> s & 1) {
+        int x = bead_x[s] >> 4, y = bead_y[s] >> 4;
+        x0 = x < x0 ? x : x0, y0 = y < y0 ? y : y0, x1 = x > x1 ? x : x1, y1 = y > y1 ? y : y1;
+      }
+    }
+    gfx_dirty(x0 - 4, y0 - 4, x1 + 5, y1 + 5);
   }
-  if (a->arc != b->arc) {
-    int d = a->arc - b->arc;
-    if (a->arc > 0 && b->arc > 0 && d > -100 && d < 100) { /* a short move: only the ends */
-      dirty_ring_point(a->arc, 8), dirty_ring_point(b->arc, 8);
-      dirty_ring_point((a->arc + b->arc) / 2, 8);
-    } else {
-      dirty_wheel();
-    }
+  if (a->arc != b->arc) { /* only the stretch of ring that grew or shrank */
+    int o = b->arc > 0 ? b->arc : 0, n = a->arc > 0 ? a->arc : 0;
+    dirty_arc(o < n ? o : n, o < n ? n : o);
   }
-  if (a->comet != b->comet) {
-    if (b->comet >= 0) {
-      dirty_ring_point(b->comet, 16);
+  if (a->comet != b->comet) { /* the spark: one box over where it was and where it is */
+    int pts[2] = {b->comet, a->comet}, x0 = 999, y0 = 999, x1 = -999, y1 = -999;
+    for (int k = 0; k < 2; k++) {
+      if (pts[k] >= 0) {
+        int x = CX + ((RING_R * isin(pts[k])) >> 14), y = CY - ((RING_R * icos(pts[k])) >> 14);
+        x0 = x < x0 ? x : x0, y0 = y < y0 ? y : y0, x1 = x > x1 ? x : x1, y1 = y > y1 ? y : y1;
+      }
     }
-    if (a->comet >= 0) {
-      dirty_ring_point(a->comet, 16);
-    }
+    gfx_dirty(x0 - 13, y0 - 13, x1 + 14, y1 + 14);
   }
   for (int s = 0; s < 12; s++) {
     if (a->play[s] != b->play[s] || a->symp[s] != b->symp[s] || a->ripple[s] != b->ripple[s]) {
-      dirty_bead(s);
+      dirty_bead(s, !a->play[s] != !b->play[s]);
     }
   }
   if (a->egg && a->twinkle != b->twinkle) {
@@ -876,7 +895,10 @@ static void repaint_changes(void) {
       dirty_center();
     }
   }
-  if (a->center != b->center || a->breath != b->breath || a->tip != b->tip || a->note != b->note ||
+  if (a->center == C_IDLE && b->center == C_IDLE && a->breath != b->breath) {
+    gfx_dirty(CX - 46, CY - 39, CX + 47, CY + 40); /* only the breath's light and words */
+  }
+  if (a->center != b->center || a->tip != b->tip || a->note != b->note ||
       a->root != b->root || a->kind != b->kind || a->bass != b->bass || a->interval != b->interval ||
       a->octave != b->octave || a->reverb != b->reverb) {
     dirty_center();
@@ -1173,6 +1195,9 @@ void loop(void) {
     if (saved.mode == MODE_SAROD) {
       int32_t p = lead_now;
       lead_pc = (((p + 128) >> 8) % 12 - saved.sa + 12) % 12;
+      if (p != lead_target && cur.comet >= 0) {
+        lead_pc = ((lead_target >> 8) % 12 - saved.sa + 12) % 12; /* sliding: the glow waits where it will land */
+      }
       play[lead_pc] = lvl_lead;
       if (lead_struck != seen_lead) {
         seen_lead = lead_struck, ripple[lead_pc] = 1;
@@ -1197,20 +1222,33 @@ void loop(void) {
     }
     int sabs = (int)isqrt_u(smax * 6u) / 9; /* how strongly the loudest one rings */
     sabs = sabs > 16 ? 16 : sabs;
+    /* the glows change slowly and the screen is slow to send: 8 times a second, in steps of 4, and a glow only
+     * moves when it has really changed (a fresh pluck shows at once) */
+    static uint32_t slow_at;
+    int slow = now - slow_at >= 125;
+    if (slow) {
+      slow_at = now;
+    }
     for (int s = 0; s < 12; s++) {
       /* only the strings that really answer: measured against the loudest, the faint ones stay dark */
       int rel = symp[s] * 5u > smax * 3u ? (int)((symp[s] * 5u - smax * 3u) * 16u / (2u * smax)) : 0;
       int lp = (int)isqrt_u(play[s] * 2u) / 9, ls = rel * sabs / 16;
-      v.play[s] = (uint8_t)(lp > 16 ? 16 : lp);
-      v.symp[s] = (uint8_t)(ls > 16 ? 16 : ls);
-      v.ripple[s] = ripple[s];
-      if (ripple[s] && ++ripple[s] > 10) {
+      lp = lp > 16 ? 16 : lp, ls = ls > 16 ? 16 : ls;
+      lp = lp > 8 ? 16 : lp > 2 ? 8 : 0, ls = ls < 4 ? 0 : ls & ~3; /* full, half, off */
+      if (lp > v.play[s] || ripple[s] == 1 || (slow && lp != v.play[s])) {
+        v.play[s] = (uint8_t)lp;
+      }
+      if (slow && (ls == 0 || ls > v.symp[s] + 3 || ls + 3 < v.symp[s])) {
+        v.symp[s] = (uint8_t)ls;
+      }
+      v.ripple[s] = (uint8_t)((ripple[s] + 1) / 2); /* 1, 2: a ring that widens over two steps */
+      if (ripple[s] && ++ripple[s] > 4) {
         ripple[s] = 0;
       }
     }
-    for (int s = 0; s < 4; s++) {
+    for (int s = 0; s < 4 && slow; s++) {
       int l = (int)isqrt_u(lvl_drone[s]) / 14;
-      v.dstr[s] = (uint8_t)(l > 8 ? 8 : l);
+      v.dstr[s] = (uint8_t)(l > 6 ? 8 : l > 2 ? 4 : 0);
     }
 
     /* the centre: a tip, the note, the chord, or the breath */
@@ -1226,7 +1264,13 @@ void loop(void) {
       int rel = (int)((p - saved.sa * 256) % 3072 + 3072) % 3072; /* Q8 semitones above Sa */
       v.arc = (int16_t)(rel / 3 ? rel / 3 : -1);
       if (p != lead_target) {
-        v.comet = (int16_t)(rel / 3); /* a slide in flight */
+        static uint32_t spark_at;
+        if (now - spark_at >= 50 || cur.comet < 0) { /* a slide in flight, 20 frames a second */
+          spark_at = now;
+          v.comet = (int16_t)(rel / 3);
+        } else {
+          v.comet = cur.comet, v.arc = cur.arc;
+        }
       }
       keep = v;
     } else if (saved.mode == MODE_CHORD && n) {
@@ -1247,7 +1291,7 @@ void loop(void) {
       v.interval = keep.interval, v.chord_pcs = keep.chord_pcs, v.arc = keep.arc;
     } else {
       v.center = C_IDLE;
-      v.breath = (uint8_t)((now % 8000u) * 64u / 8000u);
+      v.breath = (uint8_t)((now % 8000u) * 32u / 8000u * 2u);
     }
     if (tip >= 0) {
       v.center = C_TIP, v.tip = (uint8_t)tip;
@@ -1258,6 +1302,22 @@ void loop(void) {
     repaint_changes();
   }
   gfx_render(scene, 7200);
+#if defined(__wasm__)
+  { /* the emulator reports what the screen costs: rows the FM-1 would send each second */
+    extern uint32_t gfx_rows_sent, gfx_px_drawn;
+    static uint32_t stat_at;
+    if (now - stat_at >= 1000) {
+      char b[48], n[12];
+      stat_at = now;
+      format_int(n, (int32_t)gfx_rows_sent);
+      char *e = cat(cat(b, "rows/s "), n);
+      format_int(n, (int32_t)gfx_px_drawn);
+      cat(cat(e, " px/s "), n);
+      print(b);
+      gfx_rows_sent = gfx_px_drawn = 0;
+    }
+  }
+#endif
 
   if (dirty && !n && now - changed_at > 3000) { /* saving stalls the sound for a moment: wait for quiet */
     settings_save(&saved, sizeof saved);

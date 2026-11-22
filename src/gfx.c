@@ -143,26 +143,48 @@ static void flush_tile(void) {
   }
 }
 
+/* what the FM-1 would send: per call, every row between the highest and lowest one drawn */
+uint32_t gfx_rows_sent, gfx_px_drawn;
+
 int gfx_render(scene_fn scene, int budget) {
+  /* The FM-1 sends every row between the highest and lowest one drawn in a pass, at ~0.3 ms a row. So a pass
+   * starts with the smallest rectangle waiting (what moves: a spark, a ripple) and takes only the others that
+   * sit within those rows; the rest wait for the next pass. */
+  int py0 = SCREEN_H, py1 = 0;
   while (nq && budget > 0) {
-    int w = q[0].x1 - q[0].x0, rows = budget / w;
+    int pick = -1;
+    for (int i = 0; i < nq; i++) {
+      int ok = py1 <= py0 || (q[i].y0 < py1 + 4 && q[i].y1 > py0 - 4); /* first pick, or within the pass's rows */
+      if (ok && (pick < 0 || (q[i].x1 - q[i].x0) * (q[i].y1 - q[i].y0) < (q[pick].x1 - q[pick].x0) * (q[pick].y1 - q[pick].y0))) {
+        pick = i;
+      }
+    }
+    if (pick < 0) {
+      break;
+    }
+    int w = q[pick].x1 - q[pick].x0, rows = budget / w;
     rows = rows < 1 ? 1 : rows > TILE_ROWS ? TILE_ROWS
                                            : rows;
-    if (rows > q[0].y1 - q[0].y0) {
-      rows = q[0].y1 - q[0].y0;
+    if (rows > q[pick].y1 - q[pick].y0) {
+      rows = q[pick].y1 - q[pick].y0;
     }
-    clip_x0 = q[0].x0, clip_x1 = q[0].x1, clip_y0 = q[0].y0, clip_y1 = q[0].y0 + rows;
+    clip_x0 = q[pick].x0, clip_x1 = q[pick].x1, clip_y0 = q[pick].y0, clip_y1 = q[pick].y0 + rows;
     tw = w;
+    py0 = clip_y0 < py0 ? clip_y0 : py0, py1 = clip_y1 > py1 ? clip_y1 : py1;
+    gfx_px_drawn += (uint32_t)(w * rows);
     scene();
     flush_tile();
     budget -= w * rows;
-    q[0].y0 = (int16_t)(q[0].y0 + rows);
-    if (q[0].y0 >= q[0].y1) {
-      for (int i = 1; i < nq; i++) {
+    q[pick].y0 = (int16_t)(q[pick].y0 + rows);
+    if (q[pick].y0 >= q[pick].y1) {
+      for (int i = pick + 1; i < nq; i++) {
         q[i - 1] = q[i];
       }
       nq--;
     }
+  }
+  if (py1 > py0) {
+    gfx_rows_sent += (uint32_t)(py1 - py0);
   }
   return nq > 0;
 }
