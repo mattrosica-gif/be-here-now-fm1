@@ -354,7 +354,7 @@ async function connect(ask) {
       if (midiIn) midiIn.onmidimessage = null;
       midiIn = pick(access.inputs); midiOut = pick(access.outputs);
       if (midiIn) midiIn.onmidimessage = onMidi;
-      setConn(!!midiIn, midiIn ? 'FM-1 connected' : 'Plug in the FM-1 by USB');
+      setConn(!!midiIn, midiIn ? `FM-1 connected (${midiIn.name})` : 'Chrome sees no MIDI device. Plug the FM-1 in with a data cable, then press Connect again.');
       if (midiOut) { cc(20, 0); applySetup(true); sentLights = ''; sendLights(); }
     };
     access.onstatechange = hook;
@@ -715,7 +715,7 @@ $('back').addEventListener('click', () => {
   openStep(true);
 });
 $('demo').addEventListener('click', playDemo);
-$('connect').addEventListener('click', () => connect(true));
+$('connect').addEventListener('click', () => { setConn(false, 'Looking for the FM-1...'); setTimeout(() => connect(true), 400); });
 
 // the on-screen piano works too, for trying a step without the FM-1
 for (const id of ['piano']) {
