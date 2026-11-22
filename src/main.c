@@ -13,6 +13,8 @@
  *   ARP         jhala: the high drone strings strum along with the note you hold
  *   FX          reverb: hall, room, dry
  *   HOME        for Sylmira
+ *   SAVE        keep the settings through power-off (they are also kept on their own when all is silent)
+ *   GLO         how busy the sound engine is
  *   keys        play; in Sarod mode press a key while holding another to slide (meend)
  *   key lights  the notes of the thaat
  *
@@ -102,7 +104,10 @@ typedef struct {
   int32_t fb;    /* feedback, Q15: the sustain */
   int32_t ap, apx, apy; /* stiffness: an allpass in the loop (Q15 coefficient, 0 = off) and its state */
   int32_t jaw;   /* jawari: the bridge the string buzzes against (0 = none) */
+  int32_t quiet; /* blocks in a row it has been silent: past SLEEP it is not computed until plucked */
+  int32_t pk;    /* this block's loudest sample */
 } string_t;
+#define SLEEP 12
 
 static int16_t lead_buf[2048] POOL;
 static int16_t chord_buf[4][2048] POOL;
@@ -124,6 +129,9 @@ static int32_t soft16(int32_t v) {
 }
 
 static inline int32_t string_step(string_t *s, int32_t in) {
+  if (s->quiet >= SLEEP && !in) { /* asleep: silent strings cost nothing */
+    return 0;
+  }
   uint32_t i = s->d >> 16, f = (s->d & 0xFFFFu) >> 2;
   int32_t s0 = s->buf[(s->w - i) & s->mask], s1 = s->buf[(s->w - i - 1u) & s->mask];
   int32_t y = s0 + (((s1 - s0) * (int32_t)f) >> 14);
@@ -142,7 +150,13 @@ static inline int32_t string_step(string_t *s, int32_t in) {
   }
   s->buf[s->w] = (int16_t)clamp16(v + in);
   s->w = (s->w + 1u) & s->mask;
+  s->pk |= y < 0 ? -y : y;
   return y;
+}
+/* end of a block: asleep after SLEEP silent blocks */
+static void string_block(string_t *s) {
+  s->quiet = s->pk < 8 ? (s->quiet < SLEEP ? s->quiet + 1 : SLEEP) : 0;
+  s->pk = 0;
 }
 
 /* the delay that plays pitch p (Q8 MIDI), less what the loop's filters add */
@@ -166,6 +180,7 @@ static void pluck(string_t *s, int32_t level, int32_t tone, int pick) {
   if (len > s->mask) {
     len = s->mask;
   }
+  s->quiet = 0;
   for (k = 0; k < len; k++) {
     int32_t n = (int32_t)(random32() >> 17) - 16384;
     if (k < 3) { /* the java, a coconut-shell plectrum: a hard edge */
@@ -256,6 +271,7 @@ static volatile uint8_t ready;
 static volatile int32_t lead_now;    /* the lead's pitch now, Q8 (it slides) */
 static volatile uint16_t lvl_lead, lvl_chord[4], lvl_drone[4], lvl_taraf[11];
 static volatile uint32_t lead_struck, chord_struck[4]; /* counts the plucks heard (jhala strikes too) */
+static volatile uint32_t load_us, load_blocks, load_peak; /* how long audio() takes: for the GLO readout */
 static uint8_t taraf_pc[11]; /* which note each sympathetic string is tuned to (semitones above Sa) */
 
 /* ================================================================ the sound */
@@ -288,6 +304,8 @@ void audio(int32_t *out, uint32_t frames) {
   if (!ready) {
     return;
   }
+  uint32_t t_start = micros();
+  static int32_t rv_quiet;
 
   if (retune) { /* the thaat or Sa changed: retune the sympathetic, drone and chikari strings */
     retune = 0;
@@ -395,8 +413,14 @@ void audio(int32_t *out, uint32_t frames) {
     int32_t dl = sk + (dr * 3) / 4 + l + (r >> 2), dright = sk + (dr * 3) / 4 + r + (l >> 2);
     if (rv_wet) {
       int32_t send = (dl + dright) >> 4;
-      dl += (reverb_side(0, send, rv_fb, 7000) * rv_wet) >> 7;
-      dright += (reverb_side(1, send, rv_fb, 7000) * rv_wet) >> 7;
+      if (send || rv_quiet < 700) { /* the hall rests once its tail has died away (~4 s of silence) */
+        int32_t wl = reverb_side(0, send, rv_fb, 7000), wr = reverb_side(1, send, rv_fb, 7000);
+        if (send || wl > 6 || wl < -6) {
+          rv_quiet = -1; /* (counted per block below) */
+        }
+        dl += (wl * rv_wet) >> 7;
+        dright += (wr * rv_wet) >> 7;
+      }
     }
     out[2 * i] += soft16((dl * 5) >> 3);
     out[2 * i + 1] += soft16((dright * 5) >> 3);
@@ -408,6 +432,21 @@ void audio(int32_t *out, uint32_t frames) {
   }
   for (v = 0; v < 11; v++) {
     settle(&lvl_taraf[v], pk_taraf[v]);
+  }
+  string_block(&lead);
+  for (v = 0; v < 4; v++) {
+    string_block(&chord[v]), string_block(&drone[v]);
+  }
+  for (v = 0; v < 11; v++) {
+    string_block(&taraf[v]);
+  }
+  string_block(&chik[0]), string_block(&chik[1]);
+  rv_quiet = rv_quiet < 0 ? 0 : rv_quiet < 100000 ? rv_quiet + 1 : rv_quiet;
+  /* the load: time spent here against the block's own length (frames / 44.1 kHz) */
+  uint32_t us = micros() - t_start;
+  load_us += us, load_blocks += frames;
+  if (us * 441u / frames > load_peak) {
+    load_peak = us * 441u / frames; /* percent x 100 of the block's time */
   }
 }
 
@@ -444,7 +483,10 @@ enum { TIP_TONE,
        TIP_OCTAVE,
        TIP_DRONE_LVL,
        TIP_REVERB,
-       TIP_JHALA };
+       TIP_JHALA,
+       TIP_SAVED,
+       TIP_LOAD };
+static uint32_t load_avg, load_max; /* percent, over the last second */
 
 /* what the screen shows: loop() works it out, compares it with what is drawn, and repaints what differs */
 typedef struct {
@@ -698,6 +740,18 @@ static void tip_text(int tip, const char **title, const char **a, const char **b
     case TIP_REVERB:
       *title = RV[cur.reverb][0], *a = RV[cur.reverb][1], *b = RV[cur.reverb][2];
       break;
+    case TIP_SAVED:
+      *title = "Saved", *a = "your settings stay", *b = "after power-off";
+      break;
+    case TIP_LOAD: {
+      char n[12];
+      format_int(n, (int32_t)load_avg);
+      char *e = cat(cat(buf, "busy "), n);
+      format_int(n, (int32_t)load_max);
+      cat(cat(cat(cat(e, "%, peak "), n), "%"), "");
+      *title = "Sound engine", *a = buf, *b = load_max > 85 ? "near its limit" : "running freely";
+      break;
+    }
     case TIP_JHALA:
       *title = cur.jhala ? "Jhala on" : "Jhala off";
       *a = cur.jhala ? "hold a note: high" : "ARP turns on";
@@ -990,7 +1044,7 @@ static void name_chord(const int *notes, int n, view_t *v) {
 /* ================================================================ setup / loop */
 
 static void make_string(string_t *s, int16_t *buf, uint32_t len, int32_t a, int32_t fb, int32_t ap, int32_t jaw) {
-  *s = (string_t){buf, len - 1, 0, 100u << 16, 0, a, fb, ap, 0, 0, jaw};
+  *s = (string_t){buf, len - 1, 0, 100u << 16, 0, a, fb, ap, 0, 0, jaw, SLEEP, 0};
 }
 
 void setup(void) {
@@ -1136,6 +1190,22 @@ void loop(void) {
     chord_note[v] = (uint32_t)note, chord_vel[v] = egg_i >= 9 ? 70 : 85, chord_plucks[v]++;
     egg_next = now + (egg_i < 8 ? 150 : egg_i == 8 ? 260 : 40);
     egg_i++;
+  }
+  { /* the sound engine's load, each second */
+    static uint32_t load_at;
+    if (now - load_at >= 1000) {
+      load_at = now;
+      load_avg = load_blocks ? load_us * 441u / load_blocks / 100u : 0;
+      load_max = load_peak / 100u;
+      load_us = load_blocks = load_peak = 0;
+    }
+  }
+  if (button_pressed(BTN_GLO)) {
+    t = TIP_LOAD;
+  }
+  if (button_pressed(BTN_SAVE)) {
+    settings_save(&saved, sizeof saved);
+    dirty = 0, t = TIP_SAVED;
   }
   if (button_pressed(BTN_FX)) {
     saved.reverb = (uint8_t)((saved.reverb + 1) % 3);
@@ -1319,7 +1389,10 @@ void loop(void) {
   }
 #endif
 
-  if (dirty && !n && now - changed_at > 3000) { /* saving stalls the sound for a moment: wait for quiet */
+  /* saving stalls the sound for ~50 ms, so it happens on its own only in real silence: nothing held, no drone,
+   * every string faded. Otherwise SAVE does it */
+  int silent = !n && !drone_on && lvl_lead < 40 && lvl_chord[0] < 40 && lvl_chord[1] < 40 && lvl_chord[2] < 40 && lvl_chord[3] < 40;
+  if (dirty && silent && now - changed_at > 3000) {
     settings_save(&saved, sizeof saved);
     dirty = 0;
   }
