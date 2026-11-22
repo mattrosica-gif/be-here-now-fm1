@@ -248,6 +248,9 @@ static volatile int32_t lead_vel;     /* 0..127 */
 static volatile uint8_t lead_held;    /* a key is down (for jhala) */
 static volatile uint32_t chord_note[4], chord_plucks[4], chord_vel[4];
 static volatile uint8_t drone_on, retune, jhala;
+/* setup() has built the strings and the hall: on the FM-1 the sound starts before setup() runs, so audio()
+ * must not touch them until this is set */
+static volatile uint8_t ready;
 
 /* audio() writes, loop() reads: what is sounding, for the screen */
 static volatile int32_t lead_now;    /* the lead's pitch now, Q8 (it slides) */
@@ -282,6 +285,9 @@ void audio(int32_t *out, uint32_t frames) {
   uint16_t pk_lead = 0, pk_chord[4] = {0}, pk_drone[4] = {0}, pk_taraf[11] = {0};
   uint32_t i;
   int v;
+  if (!ready) {
+    return;
+  }
 
   if (retune) { /* the thaat or Sa changed: retune the sympathetic, drone and chikari strings */
     retune = 0;
@@ -974,6 +980,14 @@ void setup(void) {
   for (int k = 0; k < 4; k++) {
     saved.knob[k] = saved.knob[k] > 127 ? 64 : saved.knob[k];
   }
+  /* the big buffers live in the pool, which the FM-1 may not clear at power-on: start them silent */
+  static int16_t *const ZERO[] = {lead_buf, chord_buf[0], drone_buf[0], taraf_buf[0], chik_buf[0], rv_comb, rv_ap};
+  static const uint32_t ZLEN[] = {2048, 4 * 2048, 4 * 1024, 11 * 256, 2 * 256, sizeof rv_comb / 2, sizeof rv_ap / 2};
+  for (int z = 0; z < 7; z++) {
+    for (uint32_t k = 0; k < ZLEN[z]; k++) {
+      ZERO[z][k] = 0;
+    }
+  }
   make_string(&lead, lead_buf, 2048, 12000, 32500, AP_STIFF, 0);
   for (int v = 0; v < 4; v++) {
     make_string(&chord[v], chord_buf[v], 2048, 12000, 32500, AP_STIFF, 0);
@@ -999,6 +1013,7 @@ void setup(void) {
   }
   lead_target = (60 + saved.sa) * 256;
   retune = 1;
+  ready = 1; /* now the sound may start */
   led_backlight(1);
   gfx_splash();
   print("BE HERE NOW: love, serve, remember");
