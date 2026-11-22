@@ -15,6 +15,7 @@
  *   HOME        for Sylmira
  *   SAVE        keep the settings through power-off (they are also kept on their own when all is silent)
  *   GLO         how busy the sound engine is
+ *   SEQ         Learn mode: Raga studio, Find the note, Alankars, Taal (see learn.h)
  *   keys        play; in Sarod mode press a key while holding another to slide (meend)
  *   key lights  the notes of the thaat
  *
@@ -266,6 +267,12 @@ static volatile uint8_t drone_on, retune, jhala;
 /* setup() has built the strings and the hall: on the FM-1 the sound starts before setup() runs, so audio()
  * must not touch them until this is set */
 static volatile uint8_t ready;
+/* Learn mode: the pulse (tabla, count-in) runs inside audio(), to the sample */
+static volatile uint8_t pulse_on, pulse_restart, pulse_len, pulse_bol_now;
+static const uint8_t *volatile pulse_bols;
+static volatile uint32_t pulse_spb, pulse_beats;
+static volatile uint8_t meend_force;   /* a lesson's demonstration slides at its own speed */
+static volatile uint16_t scale_mask;   /* the notes the sympathetic strings are tuned to */
 
 /* audio() writes, loop() reads: what is sounding, for the screen */
 static volatile int32_t lead_now;    /* the lead's pitch now, Q8 (it slides) */
@@ -273,6 +280,29 @@ static volatile uint16_t lvl_lead, lvl_chord[4], lvl_drone[4], lvl_taraf[11];
 static volatile uint32_t lead_struck, chord_struck[4]; /* counts the plucks heard (jhala strikes too) */
 static volatile uint32_t load_us, load_blocks, load_peak; /* how long audio() takes: for the GLO readout */
 static uint8_t taraf_pc[11]; /* which note each sympathetic string is tuned to (semitones above Sa) */
+
+#include "learn.h"
+
+/* ================================================================ the tabla */
+
+static int16_t dayan_buf[512] POOL;
+static string_t dayan;             /* the right drum: a short, bright string tuned to Sa */
+static int32_t bay_amp;            /* the left drum: a low boom that falls in pitch */
+static uint32_t bay_ph, bay_inc, bay_end;
+
+static void tabla_hit(int bol) {
+  if (BOL_BAYAN[bol]) {
+    bay_amp = 15000, bay_inc = note_inc(46), bay_end = note_inc(39);
+  }
+  int kind = BOL_DAYAN[bol];
+  if (kind) {
+    static const int32_t A[4] = {0, 14500, 12500, 8000}, FB[4] = {0, 32250, 32600, 27500}, LVL[4] = {0, 7000, 6000, 6500};
+    static const int32_t TONE[4] = {0, 15000, 11000, 8000};
+    dayan.a = A[kind], dayan.fb = FB[kind];
+    dayan.d = delay_for((60 + saved.sa) * 256, &dayan);
+    pluck(&dayan, LVL[kind], TONE[kind], kind == 3 ? 3 : 4);
+  }
+}
 
 /* ================================================================ the sound */
 
@@ -289,7 +319,8 @@ static void settle(volatile uint16_t *lvl, uint16_t pk) { /* a meter: rises at o
 
 void audio(int32_t *out, uint32_t frames) {
   static uint32_t lead_seen, chord_seen[4], drone_next = 1, jhala_clock;
-  static uint8_t drone_which, jhala_step;
+  static uint8_t drone_which, jhala_step, pulse_pos;
+  static uint32_t pulse_next;
   static int32_t lead_pitch;
   int32_t tone_a = 4096 + saved.knob[0] * 96;
   int32_t fb = 32760 - (127 - saved.knob[2]) * 4;
@@ -310,7 +341,7 @@ void audio(int32_t *out, uint32_t frames) {
   if (retune) { /* the thaat or Sa changed: retune the sympathetic, drone and chikari strings */
     retune = 0;
     int n = 0, sa = 60 + saved.sa;
-    uint16_t mask = THAAT[saved.thaat].mask;
+    uint16_t mask = scale_mask;
     for (int oct = 0; oct < 2 && n < 11; oct++) {
       for (int s = 0; s < 12 && n < 11; s++) {
         if (mask >> s & 1u) {
@@ -326,6 +357,7 @@ void audio(int32_t *out, uint32_t frames) {
     }
     chik[0].d = delay_for((72 + saved.sa) * 256, &chik[0]);
     chik[1].d = delay_for((84 + saved.sa) * 256, &chik[1]);
+    dayan.d = delay_for((60 + saved.sa) * 256, &dayan);
   }
 
   /* the lead string: a pluck, or a slide (meend) toward the target */
@@ -339,7 +371,7 @@ void audio(int32_t *out, uint32_t frames) {
     lead_struck++;
     jhala_clock = 0, jhala_step = 1;
   } else if (lead_pitch != lead_target) {
-    int32_t t = lead_target, knob = saved.knob[3];
+    int32_t t = lead_target, knob = meend_force ? meend_force : saved.knob[3];
     int32_t step = knob ? (int32_t)(frames * 1486u / (1024u * (uint32_t)knob)) : 1 << 20;
     step = step < 1 ? 1 : step;
     lead_pitch = lead_pitch < t ? (lead_pitch + step > t ? t : lead_pitch + step)
@@ -378,6 +410,28 @@ void audio(int32_t *out, uint32_t frames) {
       jhala_step = (uint8_t)((jhala_step + 1) & 3);
     }
 
+    /* Learn mode's pulse: the tabla's next bol, exactly on the beat */
+    if (pulse_on) {
+      if (pulse_restart) {
+        pulse_restart = 0, pulse_next = 1, pulse_pos = 0;
+      }
+      if (--pulse_next == 0) {
+        pulse_next = pulse_spb;
+        int bol = pulse_bols[pulse_pos];
+        tabla_hit(bol);
+        pulse_bol_now = (uint8_t)bol;
+        pulse_pos = (uint8_t)((pulse_pos + 1) % pulse_len);
+        pulse_beats++;
+      }
+    }
+    int32_t tb = string_step(&dayan, 0);
+    if (bay_amp > 16) {
+      bay_ph += bay_inc;
+      bay_inc -= (bay_inc - bay_end) >> 11;
+      tb += (sine(bay_ph) * bay_amp) >> 15;
+      bay_amp -= bay_amp >> 12;
+    }
+
     int32_t y = string_step(&lead, 0), played = y;
     peak(&pk_lead, y);
     for (v = 0; v < 4; v++) {
@@ -410,7 +464,7 @@ void audio(int32_t *out, uint32_t frames) {
     }
     l = (l * taraf_level) >> 7;
     r = (r * taraf_level) >> 7;
-    int32_t dl = sk + (dr * 3) / 4 + l + (r >> 2), dright = sk + (dr * 3) / 4 + r + (l >> 2);
+    int32_t dl = sk + (dr * 3) / 4 + l + (r >> 2) + (tb * 3) / 4, dright = sk + (dr * 3) / 4 + r + (l >> 2) + (tb * 3) / 4;
     if (rv_wet) {
       int32_t send = (dl + dright) >> 4;
       if (send || rv_quiet < 700) { /* the hall rests once its tail has died away (~4 s of silence) */
@@ -440,7 +494,7 @@ void audio(int32_t *out, uint32_t frames) {
   for (v = 0; v < 11; v++) {
     string_block(&taraf[v]);
   }
-  string_block(&chik[0]), string_block(&chik[1]);
+  string_block(&chik[0]), string_block(&chik[1]), string_block(&dayan);
   rv_quiet = rv_quiet < 0 ? 0 : rv_quiet < 100000 ? rv_quiet + 1 : rv_quiet;
   /* the load: time spent here against the block's own length (frames / 44.1 kHz) */
   uint32_t us = micros() - t_start;
@@ -471,7 +525,8 @@ static int bead_x[12], bead_y[12]; /* Q4 */
 enum { C_IDLE,
        C_NOTE,
        C_CHORD,
-       C_TIP };
+       C_TIP,
+       C_LEARN };
 enum { TIP_TONE,
        TIP_TARAF,
        TIP_SUSTAIN,
@@ -485,7 +540,11 @@ enum { TIP_TONE,
        TIP_REVERB,
        TIP_JHALA,
        TIP_SAVED,
-       TIP_LOAD };
+       TIP_LOAD,
+       TIP_LEARN,
+       TIP_LESSON,
+       TIP_ITEM,
+       TIP_TEMPO };
 static uint32_t load_avg, load_max; /* percent, over the last second */
 static uint32_t gap_max_us, gap_show; /* the longest time between two readings of the keys, for GLO */
 
@@ -503,6 +562,11 @@ typedef struct {
   uint8_t root, kind, bass, interval; /* C_CHORD: kind 255 = two notes (an interval), 254 = unnamed */
   uint8_t dstr[4];
   uint8_t egg, twinkle; /* for Sylmira */
+  /* Learn mode */
+  uint8_t learn, lesson, litem, lstate, phase, hint, verdict, count, tbeat, tbol, tempo;
+  uint8_t n1, n2;
+  int8_t vadi, samv, target;
+  uint16_t mask; /* the notes that belong: the thaat's, or the raga's */
 } view_t;
 static view_t cur, drawn;
 
@@ -515,9 +579,11 @@ static void draw_gauges(void) {
   if (!gfx_touches(0, 0, SCREEN_W, 42)) {
     return;
   }
+  int tempo = cur.learn && (cur.lesson == L_ALANKAR || cur.lesson == L_TAAL);
   for (int k = 0; k < 4; k++) {
     int x = 30 + 60 * k, on = cur.active_knob == k;
-    int end = 640 + (768 * cur.knob[k]) / 127;
+    int val = k == 3 && tempo ? cur.tempo : cur.knob[k];
+    int end = 640 + (768 * val) / 127;
     gfx_arc(x * 16, 16 * 16, 10 * 16, 48, 640, 640 + 768, DUSK, 256);
     if (on) {
       gfx_glow(x, 16, 18, MARIGOLD, 50);
@@ -525,7 +591,7 @@ static void draw_gauges(void) {
     gfx_arc(x * 16, 16 * 16, 10 * 16, 48, 640, end > 641 ? end : 641, on ? WARM : MARIGOLD, 256);
     int ex = x * 16 + ((10 * 16 * isin(end)) >> 14), ey = 16 * 16 - ((10 * 16 * icos(end)) >> 14);
     gfx_disc(ex, ey, 40, on ? WARM : MARIGOLD, 256);
-    gfx_text_c(&F_SMALL, x, 39, NAME[k], on ? IVORY : MIST, 256);
+    gfx_text_c(&F_SMALL, x, 39, k == 3 && tempo ? "Tempo" : NAME[k], on ? IVORY : MIST, 256);
   }
 }
 
@@ -534,12 +600,23 @@ static void draw_band(void) {
     return;
   }
   const thaat_t *t = &THAAT[cur.thaat];
-  gfx_text(&F_MED, 10, 225, t->name, IVORY, 256);
-  gfx_text(&F_SMALL, 10, 238, t->western, MIST, 256);
+  char buf[24];
+  if (cur.learn) { /* the lesson at the left (PRESETS, SELECT), what to do at the right (PLAY) */
+    gfx_text(&F_MED, 10, 225, learn_item_name(buf), IVORY, 256);
+    gfx_text(&F_SMALL, 10, 238, LESSON_NAME[cur.lesson], MIST, 256);
+  } else {
+    gfx_text(&F_MED, 10, 225, t->name, IVORY, 256);
+    gfx_text(&F_SMALL, 10, 238, t->western, MIST, 256);
+  }
   gfx_text(&F_MED, 112, 225, NOTE[cur.sa], IVORY, 256);
   gfx_text(&F_SMALL, 112, 238, "Sa", MIST, 256);
-  gfx_text(&F_MED, 152, 225, cur.mode == MODE_SAROD ? "Sarod" : "Chord", IVORY, 256);
-  gfx_text(&F_SMALL, 152, 238, cur.jhala ? "jhala on" : cur.drone ? "drone on" : "drone off", MIST, 256);
+  if (cur.learn) {
+    gfx_text(&F_MED, 152, 225, "Learn", MARIGOLD, 256);
+    gfx_text(&F_SMALL, 152, 238, learn_status(buf), MIST, 256);
+  } else {
+    gfx_text(&F_MED, 152, 225, cur.mode == MODE_SAROD ? "Sarod" : "Chord", IVORY, 256);
+    gfx_text(&F_SMALL, 152, 238, cur.jhala ? "jhala on" : cur.drone ? "drone on" : "drone off", MIST, 256);
+  }
   /* the tanpura's four strings: lit as each is plucked */
   for (int s = 0; s < 4; s++) {
     int x = (216 + s * 5) * 16 + 8;
@@ -557,7 +634,10 @@ static void draw_bead(int s) {
   if (!gfx_touches(px - 24, py - 24, px + 25, py + 25)) {
     return;
   }
-  int in = THAAT[cur.thaat].mask >> s & 1, p = cur.play[s], y = cur.symp[s];
+  int in = cur.mask >> s & 1, p = cur.play[s], y = cur.symp[s];
+  if (s == cur.target) { /* the next note to play: a marigold halo */
+    gfx_glow(px, py, 21, MARIGOLD, 120);
+  }
   if (y) { /* a sympathetic string answering: a rose aura */
     gfx_glow(px, py, 20, ROSE, y * 12);
     gfx_ring(bx, by, BEAD_R * 16 + 40, 26, ROSE, y * 15 > 240 ? 240 : y * 15);
@@ -578,6 +658,14 @@ static void draw_bead(int s) {
     gfx_disc(bx, by, BEAD_R * 16, p ? mix(INK, MARIGOLD, p * 10) : INK, 220);
     gfx_ring(bx, by, BEAD_R * 16 - 8, 18, p ? MARIGOLD : DUSK, 256);
     ink = p ? IVORY : MIST;
+  }
+  if (s == cur.vadi) { /* the raga's king note: a marigold crown */
+    gfx_ring(bx, by, BEAD_R * 16 + 40, 30, MARIGOLD, 256);
+  } else if (s == cur.samv) { /* its queen: an ivory one */
+    gfx_ring(bx, by, BEAD_R * 16 + 40, 24, IVORY, 220);
+  }
+  if (s == cur.target) {
+    gfx_ring(bx, by, BEAD_R * 16 + 44, 34, WARM, 256);
   }
   const glyph_t *g = &DEV_S[SYL[s]];
   int gx = px - g->w / 2 - g->x, gy = py - g->y - (g->h + 1) / 2;
@@ -636,7 +724,7 @@ static void text_hc(const font_t *f, int cx, int y, const char *s, uint32_t c) {
 }
 
 static void center_note(void) {
-  int n = cur.note, pc = n % 12, rel = (pc - cur.sa + 12) % 12, in = THAAT[cur.thaat].mask >> rel & 1;
+  int n = cur.note, pc = n % 12, rel = (pc - cur.sa + 12) % 12, in = cur.mask >> rel & 1;
   char oct[4];
   format_int(oct, n / 12 - 1);
   int w = gfx_text_width(&F_BIG, NOTE[pc]) + 2 + gfx_text_width(&F_MED, oct);
@@ -653,11 +741,13 @@ static void center_note(void) {
     gfx_line((gx + gw / 2) * 16, (CY - 5) * 16, (gx + gw / 2) * 16, (CY + 0) * 16, 22, MARIGOLD, 256);
   }
   gfx_text(&F_BODY, x2 + g->adv + 6, CY + 14, SARGAM[rel], IVORY, 256);
-  if (in) {
+  if (cur.verdict == 1) {
+    gfx_text_c(&F_SMALL, CX, CY + 31, "right!", MARIGOLD, 256);
+  } else if (in) {
     gfx_text_c(&F_SMALL, CX, CY + 31, INTERVAL[rel], MIST, 256);
   } else {
     char s[32];
-    cat(cat(s, "not in "), THAAT[cur.thaat].name);
+    cat(cat(s, "not in "), cur.learn && cur.lesson == L_RAGA ? RAGA[cur.litem].name : THAAT[cur.thaat].name);
     gfx_text_c(&F_SMALL, CX, CY + 31, s, ROSE, 256);
   }
 }
@@ -760,11 +850,150 @@ static void tip_text(int tip, const char **title, const char **a, const char **b
       }
       break;
     }
+    case TIP_LEARN:
+      *title = cur.learn ? "Learn" : "Play";
+      *a = cur.learn ? "PRESETS: lesson" : "back to playing";
+      *b = cur.learn ? "SELECT: choose" : "";
+      break;
+    case TIP_LESSON: {
+      static const char *const LA[LESSONS] = {"hear a raga,", "a note plays:", "practice patterns", "rhythm cycles"};
+      static const char *const LB[LESSONS] = {"then echo it", "find it by ear", "in time", "on the tabla"};
+      *title = LESSON_NAME[cur.lesson], *a = LA[cur.lesson], *b = LB[cur.lesson];
+      break;
+    }
+    case TIP_ITEM:
+      if (cur.lesson == L_RAGA) {
+        *title = RAGA[cur.litem].name, *a = RAGA[cur.litem].thaat, *b = RAGA[cur.litem].time;
+      } else if (cur.lesson == L_FIND) {
+        *title = LEVEL_NAME[cur.litem], *a = "the notes it", *b = "may play";
+      } else if (cur.lesson == L_ALANKAR) {
+        *title = ALANKAR_NAME[cur.litem], *a = ALANKAR_EG[cur.litem];
+      } else {
+        *title = TAAL[cur.litem].name, *a = TAAL[cur.litem].shape;
+      }
+      break;
+    case TIP_TEMPO: {
+      char n[12];
+      format_int(n, (int32_t)learn_tempo());
+      cat(cat(buf, n), " beats a minute");
+      *title = "Tempo", *a = buf;
+      break;
+    }
     case TIP_JHALA:
       *title = cur.jhala ? "Jhala on" : "Jhala off";
       *a = cur.jhala ? "hold a note: high" : "ARP turns on";
       *b = cur.jhala ? "strings strum" : "the strumming";
       break;
+  }
+}
+
+/* Learn mode's centre */
+static void center_three(const char *title, const char *a, const char *b, uint32_t bcol) {
+  text_hc(&F_MED, CX, CY - 12, title, IVORY);
+  text_hc(&F_SMALL, CX, CY + 5, a, MIST);
+  text_hc(&F_SMALL, CX, CY + 19, b, bcol);
+}
+static void center_sargam(int pc, const char *line, uint32_t col) { /* a big Devanagari note, its name, a line */
+  const glyph_t *g = &DEV_L[SYL[pc]];
+  gfx_image(g, DEV_L_data, CX - g->w / 2 - g->x, CY + 2, col, 256);
+  int gx = CX - g->w / 2, gw = g->w;
+  if (MARK[pc] == 1) {
+    gfx_line((gx + 1) * 16, (CY + 6) * 16, (gx + gw - 1) * 16, (CY + 6) * 16, 22, col, 256);
+  } else if (MARK[pc] == 2) {
+    gfx_line((gx + gw / 2) * 16, (CY - 18) * 16, (gx + gw / 2) * 16, (CY - 13) * 16, 22, col, 256);
+  }
+  text_hc(&F_BODY, CX, CY + 22, SARGAM[pc], IVORY);
+  text_hc(&F_SMALL, CX, CY + 37, line, MIST);
+}
+static void center_learn(void) {
+  char a[32], b[32], n1[12], n2[12];
+  switch (cur.lesson) {
+    case L_RAGA: {
+      const raga_t *r = &RAGA[cur.litem];
+      if (cur.lstate == S_ECHO) {
+        if (cur.hint != 255) {
+          cat(cat(b, "next: "), SARGAM[cur.hint]);
+        } else {
+          format_int(n1, cur.n1), format_int(n2, cur.n2);
+          cat(cat(cat(b, n1), " of "), n2);
+        }
+        center_three("Your turn", "play the pakad", b, cur.hint != 255 ? ROSE : MARIGOLD);
+      } else if (cur.lstate == S_DONE) {
+        format_int(n1, cur.n1), format_int(n2, cur.n2);
+        cat(cat(cat(a, "all "), n1), " notes");
+        if (cur.n2) {
+          cat(cat(b, n2), cur.n2 == 1 ? " slip" : " slips");
+        }
+        center_three(cur.n2 ? "Well played" : "Beautiful", a, cur.n2 ? b : "no slips", MARIGOLD);
+      } else {
+        center_three(r->name, r->time, r->mood, MIST);
+      }
+      break;
+    }
+    case L_FIND:
+      if (cur.lstate == S_WAIT) {
+        text_hc(&F_BIG, CX, CY + 8, "?", IVORY);
+        text_hc(&F_SMALL, CX, CY + 28, "play it back", MIST);
+      } else if (cur.lstate == S_WRONG) {
+        center_three("Not quite", "you played", cur.n2 < 12 ? SARGAM[cur.n2] : "", ROSE);
+      } else {
+        center_three("Listen", "PLAY: hear it", LEVEL_NAME[cur.litem], MARIGOLD);
+      }
+      break;
+    case L_ALANKAR:
+      if (cur.lstate == S_COUNT) {
+        format_int(n1, cur.count);
+        text_hc(&F_BIG, CX, CY + 14, n1, IVORY);
+      } else if (cur.lstate == S_LISTEN) {
+        center_sargam(cur.n1, "listen", MARIGOLD);
+      } else if (cur.lstate == S_YOURS) {
+        format_int(n1, cur.n2), format_int(n2, alk_n);
+        cat(cat(cat(b, n1), " of "), n2);
+        center_sargam(cur.n1, b, MARIGOLD);
+      } else if (cur.lstate == S_DONE) {
+        format_int(n1, cur.n1);
+        char *pe = n1;
+        while (*pe) {
+          pe++;
+        }
+        cat(pe, "% in time");
+        format_int(n2, cur.n2), format_int(a, alk_n);
+        cat(cat(cat(cat(b, n2), " of "), a), " notes");
+        center_three(n1, b, "PLAY: again", MARIGOLD);
+      } else {
+        center_three(ALANKAR_NAME[cur.litem], ALANKAR_EG[cur.litem], "PLAY: start", MARIGOLD);
+      }
+      break;
+    default: {
+      const taal_t *tl = &TAAL[cur.litem];
+      if (cur.lstate != S_PLAYING) {
+        center_three(tl->name, tl->shape, "PLAY: start", MARIGOLD);
+        break;
+      }
+      /* the cycle: a dot a beat, sam (beat one) marigold, khali hollow, the beat now large */
+      for (int i = 0; i < tl->len; i++) {
+        int ang = i * 1024 / tl->len;
+        int x = CX * 16 + ((40 * 16 * isin(ang)) >> 14), y = CY * 16 - ((40 * 16 * icos(ang)) >> 14);
+        char m = tl->mark[i];
+        if (i == cur.tbeat) {
+          gfx_glow(x >> 4, y >> 4, 11, MARIGOLD, 170);
+          gfx_disc(x, y, 80, m == 'X' || (m == '0' && i == 0) ? MARIGOLD : WARM, 256);
+        } else if (m == 'X' || (m == '0' && i == 0)) {
+          gfx_disc(x, y, 56, MARIGOLD, 256);
+        } else if (m == '0') {
+          gfx_ring(x, y, 48, 22, IVORY, 220);
+        } else if (m != ' ') {
+          gfx_disc(x, y, 48, IVORY, 230);
+        } else {
+          gfx_disc(x, y, 30, MIST, 200);
+        }
+      }
+      text_hc(&F_MED, CX, CY + 4, BOL[cur.tbol], IVORY);
+      format_int(n1, cur.tbeat + 1), format_int(n2, tl->len);
+      cat(cat(cat(b, n1), " of "), n2);
+      text_hc(&F_SMALL, CX, CY + 20, b, MIST);
+      break;
+    }
   }
 }
 
@@ -860,6 +1089,9 @@ static void scene(void) {
         case C_CHORD:
           center_chord();
           break;
+        case C_LEARN:
+          center_learn();
+          break;
         default:
           center_tip();
           break;
@@ -902,14 +1134,35 @@ static void dirty_wheel(void) { gfx_dirty(CX - 92, CY - 92, CX + 93, CY + 93); }
 
 static void repaint_changes(void) {
   view_t *a = &cur, *b = &drawn;
-  if (a->thaat != b->thaat || a->sa != b->sa || a->egg != b->egg) {
+  if (a->thaat != b->thaat || a->sa != b->sa || a->egg != b->egg || a->learn != b->learn || a->lesson != b->lesson ||
+      a->litem != b->litem || a->mask != b->mask || a->vadi != b->vadi || a->samv != b->samv) {
     gfx_dirty_all();
     *b = *a;
     return;
   }
   for (int k = 0; k < 4; k++) {
-    if (a->knob[k] != b->knob[k] || (a->active_knob == k) != (b->active_knob == k)) {
+    if (a->knob[k] != b->knob[k] || (a->active_knob == k) != (b->active_knob == k) || (k == 3 && a->tempo != b->tempo)) {
       gfx_dirty(k * 60, 0, k * 60 + 60, 42);
+    }
+  }
+  if (a->target != b->target) {
+    if (b->target >= 0) {
+      dirty_bead(b->target, 0);
+    }
+    if (a->target >= 0) {
+      dirty_bead(a->target, 0);
+    }
+  }
+  if (a->lstate != b->lstate || a->phase != b->phase || (a->lesson == L_FIND && a->n1 != b->n1) ||
+      (a->lesson == L_TAAL && a->tempo != b->tempo)) {
+    gfx_dirty(150, 206, SCREEN_W, SCREEN_H); /* the status words */
+  }
+  if (a->lstate != b->lstate || a->n1 != b->n1 || a->n2 != b->n2 || a->hint != b->hint || a->count != b->count ||
+      a->tbeat != b->tbeat || a->verdict != b->verdict) {
+    if (a->lesson == L_TAAL && a->lstate == S_PLAYING && b->lstate == S_PLAYING) {
+      gfx_dirty(CX - 48, CY - 48, CX + 49, CY + 49); /* the beat ring and the bol */
+    } else {
+      dirty_center();
     }
   }
   if (a->mode != b->mode || a->drone != b->drone || a->jhala != b->jhala) {
@@ -1065,9 +1318,9 @@ void setup(void) {
     saved.knob[k] = saved.knob[k] > 127 ? 64 : saved.knob[k];
   }
   /* the big buffers live in the pool, which the FM-1 may not clear at power-on: start them silent */
-  static int16_t *const ZERO[] = {lead_buf, chord_buf[0], drone_buf[0], taraf_buf[0], chik_buf[0], rv_comb, rv_ap};
-  static const uint32_t ZLEN[] = {2048, 4 * 2048, 4 * 1024, 11 * 256, 2 * 256, sizeof rv_comb / 2, sizeof rv_ap / 2};
-  for (int z = 0; z < 7; z++) {
+  static int16_t *const ZERO[] = {lead_buf, chord_buf[0], drone_buf[0], taraf_buf[0], chik_buf[0], rv_comb, rv_ap, dayan_buf};
+  static const uint32_t ZLEN[] = {2048, 4 * 2048, 4 * 1024, 11 * 256, 2 * 256, sizeof rv_comb / 2, sizeof rv_ap / 2, 512};
+  for (int z = 0; z < 8; z++) {
     for (uint32_t k = 0; k < ZLEN[z]; k++) {
       ZERO[z][k] = 0;
     }
@@ -1082,6 +1335,8 @@ void setup(void) {
   }
   make_string(&chik[0], chik_buf[0], 256, 15000, 32300, AP_STIFF, 0);
   make_string(&chik[1], chik_buf[1], 256, 15000, 32200, AP_STIFF, 0);
+  make_string(&dayan, dayan_buf, 512, 14500, 32250, 0, 0);
+  scale_mask = THAAT[saved.thaat].mask;
   int16_t *p = rv_comb;
   for (int c = 0; c < 8; c++) {
     comb_at[c] = p, p += COMB_LEN[c];
@@ -1131,6 +1386,9 @@ void loop(void) {
       held[k] = (uint8_t)(base + k);
       play_on(held[k], 100);
       midi_send(0x90, held[k], 100);
+      if (learn) {
+        learn_key(held[k], now);
+      }
     }
     if (key_released(k)) {
       play_off(held[k]);
@@ -1161,8 +1419,22 @@ void loop(void) {
   if (oct != saved.octave && oct >= -2 && oct <= 2) {
     saved.octave = (int8_t)oct, changed = 1, t = TIP_OCTAVE;
   }
+  if (button_pressed(BTN_SEQ)) { /* Learn mode on or off */
+    learn_stop();
+    if (!learn) {
+      learn = 1, learn_drone_was = drone_on, learn_mode_was = saved.mode;
+      drone_on = 1, saved.mode = MODE_SAROD, depth = 0, lead_held = 0;
+    } else {
+      learn = 0, drone_on = learn_drone_was, saved.mode = learn_mode_was;
+    }
+    t = TIP_LEARN;
+  }
   int32_t e = encoder(ENC_PRESETS);
-  if (e) {
+  if (e && learn) {
+    learn_stop();
+    lesson = (uint8_t)((lesson + LESSONS + (e > 0 ? 1 : -1)) % LESSONS);
+    t = TIP_LESSON;
+  } else if (e) {
     saved.thaat = (uint8_t)((saved.thaat + THAATS + (e > 0 ? 1 : -1)) % THAATS);
     retune = 1, changed = 1, t = TIP_THAAT;
   }
@@ -1172,20 +1444,29 @@ void loop(void) {
     retune = 1, changed = 1, t = TIP_SA;
   }
   e = encoder(ENC_SELECT);
-  if (e) {
+  if (e && learn) {
+    static const uint8_t COUNT[LESSONS] = {RAGAS, LEVELS, ALANKARS, TAALS};
+    learn_stop();
+    litem[lesson] = (uint8_t)((litem[lesson] + COUNT[lesson] + (e > 0 ? 1 : -1)) % COUNT[lesson]);
+    t = TIP_ITEM;
+  } else if (e) {
     int l = saved.drone_lvl + (e > 0 ? 1 : -1);
     saved.drone_lvl = (uint8_t)(l < 0 ? 0 : l > 8 ? 8
                                                   : l);
     changed = 1, t = TIP_DRONE_LVL;
   }
-  if (button_pressed(BTN_SEL)) {
+  if (button_pressed(BTN_SEL) && !learn) {
     saved.mode ^= 1;
     depth = 0, lead_held = 0;
     changed = 1, t = TIP_MODE;
   }
   if (button_pressed(BTN_PLAY)) {
-    drone_on ^= 1;
-    t = TIP_DRONE;
+    if (learn) {
+      learn_play(now);
+    } else {
+      drone_on ^= 1;
+      t = TIP_DRONE;
+    }
   }
   if (button_pressed(BTN_ARP)) {
     jhala ^= 1;
@@ -1232,7 +1513,13 @@ void loop(void) {
   }
   for (int k = 0; k < 4; k++) {
     int32_t d = encoder(ENC_KNOB1 + k);
-    if (d) {
+    if (d && k == 3 && learn && (lesson == L_ALANKAR || lesson == L_TAAL)) { /* KNOB4 is the tempo here */
+      int v = tempo_knob + d * 2;
+      tempo_knob = (uint8_t)(v < 0 ? 0 : v > 127 ? 127
+                                                 : v);
+      pulse_spb = 44100u * 60u / learn_tempo();
+      t = TIP_TEMPO, knob_on = 3;
+    } else if (d) {
       int v = saved.knob[k] + d * 2;
       saved.knob[k] = (uint8_t)(v < 0 ? 0 : v > 127 ? 127
                                                     : v);
@@ -1241,9 +1528,15 @@ void loop(void) {
   }
   if (t >= 0) {
     tip = t, tip_until = now + 2600;
-    if (t > TIP_MEEND) {
+    if (t > TIP_MEEND && t != TIP_TEMPO) {
       knob_on = -1;
     }
+  }
+  if (learn) {
+    learn_update(now);
+  }
+  if (learn_mask() != scale_mask) { /* the sympathetic strings follow the raga, or the thaat */
+    scale_mask = learn_mask(), retune = 1;
   }
   if (tip >= 0 && now >= tip_until) {
     tip = -1, knob_on = -1;
@@ -1257,6 +1550,7 @@ void loop(void) {
   led_button(BTN_SEL, saved.mode == MODE_CHORD);
   led_button(BTN_ARP, jhala);
   led_button(BTN_FX, saved.reverb != 2);
+  led_button(BTN_SEQ, learn);
 
   /* what is held */
   base = KEY_FIRST_NOTE + 12 * saved.octave;
@@ -1266,7 +1560,7 @@ void loop(void) {
       notes[n++] = held[k];
     }
     int pc = ((base + k) % 12 - saved.sa + 24) % 12;
-    led_key(k, THAAT[saved.thaat].mask >> pc & 1);
+    led_key(k, scale_mask >> pc & 1);
   }
 
   /* the picture, at most 30 times a second */
@@ -1384,6 +1678,44 @@ void loop(void) {
     }
     if (tip >= 0) {
       v.center = C_TIP, v.tip = (uint8_t)tip;
+    }
+    /* Learn mode */
+    v.learn = learn, v.lesson = lesson, v.litem = litem[lesson], v.lstate = lstate, v.phase = phase;
+    v.mask = learn_mask(), v.tempo = tempo_knob, v.verdict = 0, v.hint = hint_pc, v.count = 0, v.n1 = v.n2 = 0;
+    v.vadi = v.samv = -1, v.target = -1, v.tbeat = 0, v.tbol = 0;
+    if (learn) {
+      if (lesson == L_RAGA) {
+        v.vadi = RAGA[litem[L_RAGA]].vadi, v.samv = RAGA[litem[L_RAGA]].samvadi;
+        v.n1 = (uint8_t)(lstate == S_DONE ? echo_n : echo_i), v.n2 = (uint8_t)(lstate == S_DONE ? echo_slips : echo_n);
+      } else if (lesson == L_FIND) {
+        v.n1 = (uint8_t)find_streak, v.n2 = (uint8_t)(find_played < 0 ? 255 : find_played);
+      } else if (lesson == L_ALANKAR) {
+        uint32_t b = alk_seen;
+        v.count = (uint8_t)(b < 5 ? b : 0);
+        if (lstate == S_LISTEN && b >= 5) {
+          v.n1 = (uint8_t)(degree_semis(alk[b - 5]) % 12);
+        } else if (lstate == S_YOURS) {
+          int j = (int)b - 5 - alk_n;
+          v.n1 = (uint8_t)(j >= 0 && j < alk_n ? degree_semis(alk[j]) % 12 : 0), v.n2 = (uint8_t)(j + 1);
+        } else if (lstate == S_DONE) {
+          v.n1 = (uint8_t)(alk_n ? alk_hits * 100 / alk_n : 0), v.n2 = (uint8_t)alk_hits;
+        }
+        v.target = (int8_t)learn_target();
+      } else if (lstate == S_PLAYING) {
+        uint32_t b = pulse_beats;
+        v.tbeat = (uint8_t)(b ? (b - 1) % TAAL[litem[L_TAAL]].len : 0), v.tbol = pulse_bol_now;
+      }
+      /* the centre: the lesson, except while a raga is demonstrated, or a found note is shown */
+      if (lesson == L_RAGA && lstate == S_DEMO) {
+        v.center = C_NOTE, v.note = (int16_t)((lead_now + 128) >> 8);
+      } else if (lesson == L_FIND && lstate == S_RIGHT) {
+        v.center = C_NOTE, v.note = (int16_t)(60 + saved.sa + find_note), v.verdict = 1;
+      } else {
+        v.center = C_LEARN;
+      }
+      if (tip >= 0) {
+        v.center = C_TIP;
+      }
     }
     v.egg = egg_until != 0;
     v.twinkle = (uint8_t)(v.egg ? (now - egg_from) / 66 : 0);
