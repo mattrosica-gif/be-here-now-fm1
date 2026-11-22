@@ -1,134 +1,166 @@
-/* BE HERE NOW: a sarod-inspired string instrument that teaches you what you play.
- * Named after Ram Dass's book; love, serve, remember.
+/* BE HERE NOW: a sarod-inspired string instrument that shows you what you play.
+ * After Ram Dass: love, serve, remember.
  *
- *   keys        SAROD mode: one string. Press a key while holding another = MEEND (a slide), no new pluck.
- *               CHORD mode: four strings, one per key, and the screen names the chord.
- *   SEL         switch SAROD / CHORD
- *   PLAY        the tanpura drone on / off (Pa, Sa, Sa, low Sa, round and round)
- *   PRESETS     the thaat (the parent scale): the sympathetic strings retune to it
- *   ALGORITHM   Sa, the home note (C .. B)
+ * The controls, as they sit around the screen:
+ *   KNOB1..4    Tone, Taraf, Sustain, Meend: the four gauges along the top of the screen
+ *   PRESETS     the thaat (parent scale): bottom left of the screen
+ *   ALGORITHM   Sa, the home note: next to it
+ *   SELECT      the drone's level
+ *   MASTER      the volume
  *   OCT- OCT+   the octave
- *   KNOB1       TONE     bright / dark pluck
- *   KNOB2       TARAF    how loud the sympathetic strings ring
- *   KNOB3       SUSTAIN  how long a string rings
- *   KNOB4       MEEND    how slow the slides are (0: no slides, every key plucks)
+ *   SEL         Sarod (one string, slides) or Chord (four strings, names and shapes)
+ *   PLAY        the tanpura drone on / off: the four strings at the bottom right
+ *   ARP         jhala: the high drone strings strum along with the note you hold
+ *   FX          reverb: hall, room, dry
+ *   HOME        for Sylmira
+ *   keys        play; in Sarod mode press a key while holding another to slide (meend)
  *   key lights  the notes of the thaat
  *
- * The sound: Karplus-Strong strings (a burst of noise in a delay line, filtered a little on every pass).
- * The main string feeds 11 more strings tuned to the thaat: they only ring when you play a note (or a
- * harmonic) they share, as a sarod's taraf strings do.
+ * The screen: the 12 notes as a mala of beads, Sa at the top. What you play glows marigold; the sympathetic
+ * strings that answer it glow rose; an arc from Sa shows how far your note is from home; a slide carries a spark
+ * around the ring; a chord draws its shape. When you stop, the centre breathes.
  *
- * Integers only (the FM-1 has no FPU). Built on foma by konsumer (GPL-3.0). */
+ * The sound: Karplus-Strong strings (a burst of noise in a delay line, filtered a little on every pass), with a
+ * stiffness filter for the metal, a skin body, 11 sympathetic strings tuned to the thaat, a tanpura with a buzzing
+ * bridge (jawari), two high chikari strings for jhala, and a hall. Integers only: the FM-1 has no FPU.
+ * Built on foma by konsumer (GPL-3.0). */
 #include "fm1.h"
+#include "gfx.h"
 #include "period.h"
 
 /* ================================================================ music knowledge */
 
-/* the 10 thaats of Hindustani music (Bhatkhande), as semitones above Sa, and their Western cousins */
 typedef struct {
-  const char *name, *western;
+  const char *name, *western, *raga;
   uint16_t mask; /* bit n: n semitones above Sa is in the scale */
 } thaat_t;
 #define M(a, b, c, d, e, f, g) (uint16_t)(1u << a | 1u << b | 1u << c | 1u << d | 1u << e | 1u << f | 1u << g)
 static const thaat_t THAAT[] = {
-  {"BILAWAL", "MAJOR (IONIAN)", M(0, 2, 4, 5, 7, 9, 11)},
-  {"KALYAN", "LYDIAN", M(0, 2, 4, 6, 7, 9, 11)},
-  {"KHAMAJ", "MIXOLYDIAN", M(0, 2, 4, 5, 7, 9, 10)},
-  {"KAFI", "DORIAN", M(0, 2, 3, 5, 7, 9, 10)},
-  {"ASAVARI", "NATURAL MINOR", M(0, 2, 3, 5, 7, 8, 10)},
-  {"BHAIRAVI", "PHRYGIAN", M(0, 1, 3, 5, 7, 8, 10)},
-  {"BHAIRAV", "DOUBLE HARMONIC", M(0, 1, 4, 5, 7, 8, 11)},
-  {"PURVI", "NO WESTERN NAME", M(0, 1, 4, 6, 7, 8, 11)},
-  {"MARWA", "NO WESTERN NAME", M(0, 1, 4, 6, 7, 9, 11)},
-  {"TODI", "NO WESTERN NAME", M(0, 1, 3, 6, 7, 8, 11)},
+  {"Bilawal", "major scale", "Alhaiya Bilawal", M(0, 2, 4, 5, 7, 9, 11)},
+  {"Kalyan", "Lydian mode", "Yaman", M(0, 2, 4, 6, 7, 9, 11)},
+  {"Khamaj", "Mixolydian", "Khamaj", M(0, 2, 4, 5, 7, 9, 10)},
+  {"Kafi", "Dorian mode", "Kafi", M(0, 2, 3, 5, 7, 9, 10)},
+  {"Asavari", "natural minor", "Darbari", M(0, 2, 3, 5, 7, 8, 10)},
+  {"Bhairavi", "Phrygian mode", "Bhairavi", M(0, 1, 3, 5, 7, 8, 10)},
+  {"Bhairav", "double harmonic", "Ahir Bhairav", M(0, 1, 4, 5, 7, 8, 11)},
+  {"Purvi", "no Western twin", "Purvi", M(0, 1, 4, 6, 7, 8, 11)},
+  {"Marwa", "no Western twin", "Marwa", M(0, 1, 4, 6, 7, 9, 11)},
+  {"Todi", "no Western twin", "Miyan ki Todi", M(0, 1, 3, 6, 7, 8, 11)},
 };
 #define THAATS 10
-static const char *const RAGA_EG[THAATS] = {"eg Alhaiya Bilawal", "eg Yaman", "eg Khamaj", "eg Kafi, Bageshri",
-                                            "eg Darbari", "eg Bhairavi", "eg Ahir Bhairav",
-                                            "eg Puriya Dhanashri", "eg Marwa", "eg Miyan ki Todi"};
 
-static const char *const NOTE[12] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
+/* "\x01" is a sharp sign in the fonts */
+static const char *const NOTE[12] = {"C", "C\x01", "D", "D\x01", "E", "F", "F\x01", "G", "G\x01", "A", "A\x01", "B"};
 static const char *const SARGAM[12] = {"Sa", "komal Re", "Re", "komal Ga", "Ga", "Ma",
                                        "tivra Ma", "Pa", "komal Dha", "Dha", "komal Ni", "Ni"};
-static const char *const SHORT[12] = {"S", "r", "R", "g", "G", "m", "M", "P", "d", "D", "n", "N"};
-static const char *const INTERVAL[12] = {"unison", "minor 2nd", "major 2nd", "minor 3rd", "major 3rd", "perfect 4th",
+static const uint8_t SYL[12] = {0, 1, 1, 2, 2, 3, 3, 4, 5, 5, 6, 6};  /* Devanagari syllable: sa re ga ma pa dha ni */
+static const uint8_t MARK[12] = {0, 1, 0, 1, 0, 0, 2, 0, 1, 0, 1, 0}; /* 1 komal (line below), 2 tivra (line above) */
+static const char *const INTERVAL[12] = {"the home note", "minor 2nd", "major 2nd", "minor 3rd", "major 3rd", "perfect 4th",
                                          "tritone", "perfect 5th", "minor 6th", "major 6th", "minor 7th", "major 7th"};
 
-/* chords, as semitone masks above the root */
 typedef struct {
-  const char *name;
+  const char *sym, *what, *feel;
   uint16_t mask;
-  const char *what;
 } chord_t;
 #define C3(a, b, c) (uint16_t)(1u << a | 1u << b | 1u << c)
 #define C4(a, b, c, d) (uint16_t)(1u << a | 1u << b | 1u << c | 1u << d)
 static const chord_t CHORD[] = {
-  {"MAJ", C3(0, 4, 7), "major triad: root, M3, P5"},
-  {"MIN", C3(0, 3, 7), "minor triad: root, m3, P5"},
-  {"DIM", C3(0, 3, 6), "diminished: two minor 3rds"},
-  {"AUG", C3(0, 4, 8), "augmented: two major 3rds"},
-  {"SUS2", C3(0, 2, 7), "suspended: 2nd for the 3rd"},
-  {"SUS4", C3(0, 5, 7), "suspended: 4th for the 3rd"},
-  {"7", C4(0, 4, 7, 10), "dominant 7th: maj + m7"},
-  {"MAJ7", C4(0, 4, 7, 11), "major 7th: maj + M7"},
-  {"MIN7", C4(0, 3, 7, 10), "minor 7th: min + m7"},
-  {"M7B5", C4(0, 3, 6, 10), "half-diminished: dim + m7"},
-  {"DIM7", C4(0, 3, 6, 9), "diminished 7th: all m3s"},
-  {"6", C4(0, 4, 7, 9), "major 6th: maj + M6"},
-  {"MIN6", C4(0, 3, 7, 9), "minor 6th: min + M6"},
-  {"POWER", (uint16_t)(1u << 0 | 1u << 7), "power chord: root + P5"},
+  {"", "major triad", "bright, settled", C3(0, 4, 7)},
+  {"m", "minor triad", "soft, inward", C3(0, 3, 7)},
+  {"dim", "diminished", "tense, uneasy", C3(0, 3, 6)},
+  {"aug", "augmented", "dreamy, adrift", C3(0, 4, 8)},
+  {"sus2", "suspended 2nd", "open, airy", C3(0, 2, 7)},
+  {"sus4", "suspended 4th", "waiting", C3(0, 5, 7)},
+  {"7", "dominant 7th", "wants to move", C4(0, 4, 7, 10)},
+  {"maj7", "major 7th", "warm, glowing", C4(0, 4, 7, 11)},
+  {"m7", "minor 7th", "mellow, soulful", C4(0, 3, 7, 10)},
+  {"m7\x02" "5", "half-diminished", "dark, searching", C4(0, 3, 6, 10)},
+  {"dim7", "diminished 7th", "suspense", C4(0, 3, 6, 9)},
+  {"6", "major 6th", "sweet, wistful", C4(0, 4, 7, 9)},
+  {"m6", "minor 6th", "bittersweet", C4(0, 3, 7, 9)},
+  {"5", "power chord", "root and 5th", (uint16_t)(1u << 0 | 1u << 7)},
 };
 #define CHORDS 14
 
-/* ================================================================ the strings (Karplus-Strong) */
+static char *cat(char *d, const char *s) {
+  while (*s) {
+    *d++ = *s++;
+  }
+  *d = 0;
+  return d;
+}
+
+/* ================================================================ the strings */
 
 typedef struct {
   int16_t *buf;
   uint32_t mask; /* buffer length - 1 (a power of two) */
   uint32_t w;    /* write position */
   uint32_t d;    /* delay, samples, Q16 */
-  int32_t lp;    /* the loop filter's state */
-  int32_t a;     /* loop filter, Q14: 16384 = bright (no filtering), lower = darker */
-  int32_t fb;    /* feedback, Q15: how much survives each pass (the sustain) */
+  int32_t lp;    /* loop filter state */
+  int32_t a;     /* loop filter, Q14: 16384 = no filtering, lower = darker */
+  int32_t fb;    /* feedback, Q15: the sustain */
+  int32_t ap, apx, apy; /* stiffness: an allpass in the loop (Q15 coefficient, 0 = off) and its state */
+  int32_t jaw;   /* jawari: the bridge the string buzzes against (0 = none) */
 } string_t;
 
-static int16_t main_buf[2048] POOL;
+static int16_t lead_buf[2048] POOL;
 static int16_t chord_buf[4][2048] POOL;
 static int16_t drone_buf[4][1024] POOL;
 static int16_t taraf_buf[11][256] POOL;
-
-static string_t lead, chord[4], drone[4], taraf[11];
+static int16_t chik_buf[2][256] POOL;
+static string_t lead, chord[4], drone[4], taraf[11], chik[2];
 
 static int32_t clamp16(int32_t v) { return v > 32767 ? 32767 : v < -32767 ? -32767
                                                                            : v; }
+/* a soft ceiling: loud moments round off instead of cracking */
+static int32_t soft16(int32_t v) {
+  if (v > 22000) {
+    v = 22000 + ((v - 22000) >> 2);
+  } else if (v < -22000) {
+    v = -22000 + ((v + 22000) >> 2);
+  }
+  return clamp16(v);
+}
 
-/* one sample of a string: read the delay line, filter it, feed it back with `in` added */
 static inline int32_t string_step(string_t *s, int32_t in) {
-  uint32_t i = s->d >> 16, f = (s->d & 0xFFFFu) >> 2; /* fraction, Q14 */
+  uint32_t i = s->d >> 16, f = (s->d & 0xFFFFu) >> 2;
   int32_t s0 = s->buf[(s->w - i) & s->mask], s1 = s->buf[(s->w - i - 1u) & s->mask];
   int32_t y = s0 + (((s1 - s0) * (int32_t)f) >> 14);
   s->lp += ((y - s->lp) * s->a) >> 14;
-  s->buf[s->w] = (int16_t)clamp16(((s->lp * s->fb) >> 15) + in);
+  int32_t v = (s->lp * s->fb) >> 15;
+  if (s->ap) { /* stiffness: high partials come round a little sooner, as on a steel string */
+    int32_t o = ((s->ap * v) >> 15) + s->apx - ((s->ap * s->apy) >> 15);
+    s->apx = v, s->apy = o, v = o;
+  }
+  if (s->jaw) { /* jawari: the string grazes a curved bridge, which folds energy into bright overtones */
+    if (v > s->jaw) {
+      v = s->jaw + ((v - s->jaw) >> 1);
+    } else if (v < -s->jaw * 3) {
+      v = -s->jaw * 3 + ((v + s->jaw * 3) >> 1);
+    }
+  }
+  s->buf[s->w] = (int16_t)clamp16(v + in);
   s->w = (s->w + 1u) & s->mask;
   return y;
 }
 
-/* the delay that plays MIDI pitch p (Q8: note * 256), less what the loop filter adds */
-static uint32_t delay_for(int32_t p, int32_t a) {
-  if (p < 24 * 256) {
-    p = 24 * 256;
-  }
-  if (p > 120 * 256) {
-    p = 120 * 256;
-  }
+/* the delay that plays pitch p (Q8 MIDI), less what the loop's filters add */
+#define AP_STIFF (-13500) /* the lead's stiffness: about -0.41 */
+static uint32_t delay_for(int32_t p, const string_t *s) {
+  p = p < 24 * 256 ? 24 * 256 : p > 120 * 256 ? 120 * 256
+                                              : p;
   uint32_t n = (uint32_t)p >> 8, fr = (uint32_t)p & 255u;
   uint32_t per = PERIOD[n] - (((PERIOD[n] - PERIOD[n + 1]) >> 8) * fr);
-  uint32_t comp = ((uint32_t)(16384 - a) << 16) / (uint32_t)a + 65536u; /* the filter's delay + the one-sample write */
+  uint32_t comp = ((uint32_t)(16384 - s->a) << 16) / (uint32_t)s->a;
+  if (s->ap) { /* an allpass delays low notes by (1 - c) / (1 + c) samples */
+    comp += (uint32_t)(((32768 - s->ap) << 15) / (32768 + s->ap)) << 1;
+  }
   return per > comp + 2 * 65536u ? per - comp : 2 * 65536u;
 }
 
-/* pluck: add a burst of filtered noise along one period of the string. `pick` < 1: where the plectrum strikes */
-static void pluck(string_t *s, int32_t level, int32_t tone) {
+/* a pluck: the plectrum's click, then a burst of filtered noise along one period, struck at 1/pick of the string */
+static void pluck(string_t *s, int32_t level, int32_t tone, int pick) {
   uint32_t len = s->d >> 16, k;
   int32_t lpn = 0;
   if (len > s->mask) {
@@ -136,16 +168,64 @@ static void pluck(string_t *s, int32_t level, int32_t tone) {
   }
   for (k = 0; k < len; k++) {
     int32_t n = (int32_t)(random32() >> 17) - 16384;
+    if (k < 3) { /* the java, a coconut-shell plectrum: a hard edge */
+      n += 22000 - (int32_t)k * 7000;
+    }
     lpn += ((n - lpn) * tone) >> 14;
     uint32_t at = (s->w - 1u - k) & s->mask;
-    s->buf[at] = (int16_t)clamp16(s->buf[at] / 2 + ((lpn * level) >> 13));
+    s->buf[at] = (int16_t)clamp16(s->buf[at] / 3 + ((lpn * level) >> 14));
   }
-  /* the plectrum strikes near the bridge (1/7 of the string): take that out as a comb, brighter and twangier */
-  uint32_t P = len / 7u;
+  uint32_t P = len / (uint32_t)pick;
   for (k = len; P && k-- > P;) {
     uint32_t at = (s->w - 1u - k) & s->mask, from = (s->w - 1u - (k - P)) & s->mask;
     s->buf[at] = (int16_t)clamp16(s->buf[at] - s->buf[from] / 2);
   }
+}
+
+/* the skin: three resonances of the sarod's goatskin belly (state-variable bandpass filters) */
+typedef struct {
+  int32_t lp, bp, f, q;
+} svf_t;
+static inline int32_t svf_bp(svf_t *s, int32_t x) {
+  s->lp += (s->f * s->bp) >> 15;
+  int32_t hp = x - s->lp - ((s->q * s->bp) >> 15);
+  s->bp += (s->f * hp) >> 15;
+  s->bp = s->bp > 400000 ? 400000 : s->bp < -400000 ? -400000
+                                                     : s->bp;
+  return s->bp;
+}
+static svf_t body[3] = {{0, 0, 980, 5461}, {0, 0, 3173, 8192}, {0, 0, 8370, 16384}}; /* 210 Hz, 680 Hz, 1.8 kHz */
+
+/* the hall: four combs and two allpasses a side (after Freeverb), 16-bit lines */
+static const uint16_t COMB_LEN[8] = {1116, 1188, 1277, 1356, 1139, 1211, 1300, 1379};
+static const uint16_t AP_LEN[4] = {556, 441, 579, 464};
+static int16_t rv_comb[1116 + 1188 + 1277 + 1356 + 1139 + 1211 + 1300 + 1379] POOL;
+static int16_t rv_ap[556 + 441 + 579 + 464] POOL;
+static int16_t *comb_at[8], *ap_at[4];
+static uint16_t comb_i[8], ap_i[4];
+static int32_t comb_lp[8];
+
+static int32_t reverb_side(int side, int32_t in, int32_t fb, int32_t damp) {
+  int32_t sum = 0;
+  for (int c = side * 4; c < side * 4 + 4; c++) {
+    int32_t o = comb_at[c][comb_i[c]];
+    comb_lp[c] = ((o * (32768 - damp)) >> 15) + ((comb_lp[c] * damp) >> 15);
+    comb_at[c][comb_i[c]] = (int16_t)clamp16(in + ((comb_lp[c] * fb) >> 15));
+    if (++comb_i[c] >= COMB_LEN[c]) {
+      comb_i[c] = 0;
+    }
+    sum += o;
+  }
+  sum >>= 2;
+  for (int a = side * 2; a < side * 2 + 2; a++) {
+    int32_t b = ap_at[a][ap_i[a]];
+    ap_at[a][ap_i[a]] = (int16_t)clamp16(sum + (b >> 1));
+    sum = b - sum;
+    if (++ap_i[a] >= AP_LEN[a]) {
+      ap_i[a] = 0;
+    }
+  }
+  return sum;
 }
 
 /* ================================================================ state shared by loop() and audio() */
@@ -156,44 +236,72 @@ enum { MODE_SAROD,
 static struct {
   int8_t octave;
   uint8_t thaat, sa, mode;
-  uint8_t knob[4]; /* TONE, TARAF, SUSTAIN, MEEND, 0..127 */
-} saved = {0, 1, 0, MODE_SAROD, {80, 70, 90, 20}};
+  uint8_t knob[4];   /* Tone, Taraf, Sustain, Meend: 0..127 */
+  uint8_t drone_lvl; /* 0..8 */
+  uint8_t reverb;    /* 0 hall, 1 room, 2 dry */
+} saved = {0, 1, 0, MODE_SAROD, {80, 70, 90, 20}, 4, 0};
 
 /* loop() writes, audio() reads */
-static volatile int32_t lead_target;   /* Q8 MIDI pitch */
-static volatile uint32_t lead_plucks;  /* counts up: a new pluck */
-static volatile int32_t lead_vel;      /* 0..127 */
+static volatile int32_t lead_target;  /* Q8 MIDI pitch */
+static volatile uint32_t lead_plucks; /* counts up: a new pluck */
+static volatile int32_t lead_vel;     /* 0..127 */
+static volatile uint8_t lead_held;    /* a key is down (for jhala) */
 static volatile uint32_t chord_note[4], chord_plucks[4], chord_vel[4];
-static volatile uint8_t drone_on, retune;
+static volatile uint8_t drone_on, retune, jhala;
+
+/* audio() writes, loop() reads: what is sounding, for the screen */
+static volatile int32_t lead_now;    /* the lead's pitch now, Q8 (it slides) */
+static volatile uint16_t lvl_lead, lvl_chord[4], lvl_drone[4], lvl_taraf[11];
+static volatile uint32_t lead_struck, chord_struck[4]; /* counts the plucks heard (jhala strikes too) */
+static uint8_t taraf_pc[11]; /* which note each sympathetic string is tuned to (semitones above Sa) */
 
 /* ================================================================ the sound */
 
+static void peak(uint16_t *p, int32_t y) {
+  int32_t a = y < 0 ? -y : y;
+  if (a > *p) {
+    *p = (uint16_t)(a > 65535 ? 65535 : a);
+  }
+}
+static void settle(volatile uint16_t *lvl, uint16_t pk) { /* a meter: rises at once, falls over ~0.2 s */
+  uint16_t l = *lvl;
+  *lvl = pk > l ? pk : (uint16_t)(l - (l >> 4));
+}
+
 void audio(int32_t *out, uint32_t frames) {
-  static uint32_t lead_seen, chord_seen[4], drone_clock, drone_next;
+  static uint32_t lead_seen, chord_seen[4], drone_next = 1, jhala_clock;
+  static uint8_t drone_which, jhala_step;
   static int32_t lead_pitch;
-  int32_t tone_a = 4096 + saved.knob[0] * 96;                 /* loop filter */
-  int32_t fb = 32760 - (127 - saved.knob[2]) * 4;             /* 32252 .. 32760 */
-  int32_t taraf_level = saved.knob[1];                         /* 0..127 */
-  int32_t pluck_tone = 3000 + saved.knob[0] * 105;             /* the noise burst's brightness */
+  int32_t tone_a = 4096 + saved.knob[0] * 96;
+  int32_t fb = 32760 - (127 - saved.knob[2]) * 4;
+  int32_t taraf_level = saved.knob[1];
+  int32_t pluck_tone = 3000 + saved.knob[0] * 105;
+  int32_t drone_gain = saved.drone_lvl * 22; /* 0..176, /512 */
+  static const int32_t RV_FB[3] = {28300, 25000, 0}, RV_WET[3] = {150, 90, 0};
+  int32_t rv = saved.reverb < 3 ? saved.reverb : 0, rv_fb = RV_FB[rv], rv_wet = RV_WET[rv];
+  uint16_t pk_lead = 0, pk_chord[4] = {0}, pk_drone[4] = {0}, pk_taraf[11] = {0};
   uint32_t i;
   int v;
 
-  if (retune) { /* the thaat or Sa changed: retune the sympathetic and drone strings */
+  if (retune) { /* the thaat or Sa changed: retune the sympathetic, drone and chikari strings */
     retune = 0;
     int n = 0, sa = 60 + saved.sa;
     uint16_t mask = THAAT[saved.thaat].mask;
     for (int oct = 0; oct < 2 && n < 11; oct++) {
       for (int s = 0; s < 12 && n < 11; s++) {
         if (mask >> s & 1u) {
-          taraf[n].d = delay_for((sa + 12 * oct + s) * 256, taraf[n].a);
+          taraf[n].d = delay_for((sa + 12 * oct + s) * 256, &taraf[n]);
+          taraf_pc[n] = (uint8_t)s;
           n++;
         }
       }
     }
     static const int8_t DRONE_NOTE[4] = {-5, 0, 0, -12}; /* Pa below Sa, Sa, Sa, Sa an octave down */
     for (v = 0; v < 4; v++) {
-      drone[v].d = delay_for((48 + saved.sa + DRONE_NOTE[v]) * 256, drone[v].a);
+      drone[v].d = delay_for((48 + saved.sa + DRONE_NOTE[v]) * 256, &drone[v]);
     }
+    chik[0].d = delay_for((72 + saved.sa) * 256, &chik[0]);
+    chik[1].d = delay_for((84 + saved.sa) * 256, &chik[1]);
   }
 
   /* the lead string: a pluck, or a slide (meend) toward the target */
@@ -202,294 +310,578 @@ void audio(int32_t *out, uint32_t frames) {
   if (lead_plucks != lead_seen) {
     lead_seen = lead_plucks;
     lead_pitch = lead_target;
-    lead.d = delay_for(lead_pitch, lead.a);
-    pluck(&lead, 200 + lead_vel * 200, pluck_tone);
+    lead.d = delay_for(lead_pitch, &lead);
+    pluck(&lead, 200 + lead_vel * 200, pluck_tone, 9);
+    lead_struck++;
+    jhala_clock = 0, jhala_step = 1;
   } else if (lead_pitch != lead_target) {
     int32_t t = lead_target, knob = saved.knob[3];
     int32_t step = knob ? (int32_t)(frames * 1486u / (1024u * (uint32_t)knob)) : 1 << 20;
-    if (step < 1) {
-      step = 1;
-    }
+    step = step < 1 ? 1 : step;
     lead_pitch = lead_pitch < t ? (lead_pitch + step > t ? t : lead_pitch + step)
                                 : (lead_pitch - step < t ? t : lead_pitch - step);
   }
-  lead.d = delay_for(lead_pitch, lead.a);
+  lead.d = delay_for(lead_pitch, &lead);
+  lead_now = lead_pitch;
 
   for (v = 0; v < 4; v++) {
     chord[v].a = tone_a;
     chord[v].fb = fb;
     if (chord_plucks[v] != chord_seen[v]) {
       chord_seen[v] = chord_plucks[v];
-      chord[v].d = delay_for((int32_t)chord_note[v] * 256, chord[v].a);
-      pluck(&chord[v], 150 + (int32_t)chord_vel[v] * 150, pluck_tone);
+      chord[v].d = delay_for((int32_t)chord_note[v] * 256, &chord[v]);
+      pluck(&chord[v], 150 + (int32_t)chord_vel[v] * 150, pluck_tone, 8);
+      chord_struck[v]++;
     }
   }
 
   for (i = 0; i < frames; i++) {
-    /* the tanpura: one string every 0.6 s */
-    if (drone_on && ++drone_clock >= drone_next) {
-      static uint8_t which;
-      drone_clock = 0;
-      drone_next = 26460;
-      pluck(&drone[which], 9000, 9000);
-      which = (uint8_t)((which + 1) & 3);
+    /* the tanpura: one string every 0.6 s, a little unevenly, as a hand plays it */
+    if (drone_on && --drone_next == 0) {
+      drone_next = 25000 + (random32() & 2047);
+      pluck(&drone[drone_which], 9000, 11000, 7);
+      drone_which = (uint8_t)((drone_which + 1) & 3);
     }
-    int32_t played = string_step(&lead, 0);
+    /* jhala: while a note is held, the chikari strings strum three strokes between its own: da ra ra ra */
+    if (jhala && lead_held && saved.mode == MODE_SAROD && ++jhala_clock >= 5900) {
+      jhala_clock = 0;
+      if (jhala_step == 0) {
+        pluck(&lead, 4000, pluck_tone, 9);
+        lead_struck++;
+      } else {
+        pluck(&chik[jhala_step & 1], 5200, 12000, 6);
+      }
+      jhala_step = (uint8_t)((jhala_step + 1) & 3);
+    }
+
+    int32_t y = string_step(&lead, 0), played = y;
+    peak(&pk_lead, y);
     for (v = 0; v < 4; v++) {
-      played += string_step(&chord[v], 0) / 2;
+      y = string_step(&chord[v], 0);
+      peak(&pk_chord[v], y);
+      played += y / 2;
     }
+    int32_t chk = string_step(&chik[0], 0) + string_step(&chik[1], 0);
+    played += chk / 2;
     int32_t dr = 0;
     for (v = 0; v < 4; v++) {
-      dr += string_step(&drone[v], 0);
+      y = string_step(&drone[v], 0);
+      peak(&pk_drone[v], y);
+      dr += y;
     }
-    dr /= 2;
-    /* the sympathetic strings: excited by everything else, only ringing where they agree */
-    int32_t excite = (played + dr) >> 9, l = 0, r = 0;
+    dr = (dr * drone_gain) >> 9;
+    /* the skin colours what is plucked */
+    int32_t sk = played + ((svf_bp(&body[0], played) * 7000) >> 15) + ((svf_bp(&body[1], played) * 6000) >> 15) +
+                 ((svf_bp(&body[2], played) * 4200) >> 15);
+    /* the sympathetic strings: excited by everything, ringing only where they agree with it */
+    int32_t excite = (played + (dr >> 1)) >> 8, l = 0, r = 0;
     for (v = 0; v < 11; v++) {
-      int32_t y = string_step(&taraf[v], excite);
+      y = string_step(&taraf[v], excite);
+      peak(&pk_taraf[v], y);
       if (v & 1) {
         l += y;
       } else {
         r += y;
       }
     }
-    l = (l * taraf_level) >> 8;
-    r = (r * taraf_level) >> 8;
-    int32_t mid = played + (dr * 3) / 4;
-    out[2 * i] += clamp16(mid + l + (r >> 2));
-    out[2 * i + 1] += clamp16(mid + r + (l >> 2));
+    l = (l * taraf_level) >> 7;
+    r = (r * taraf_level) >> 7;
+    int32_t dl = sk + (dr * 3) / 4 + l + (r >> 2), dright = sk + (dr * 3) / 4 + r + (l >> 2);
+    if (rv_wet) {
+      int32_t send = (dl + dright) >> 4;
+      dl += (reverb_side(0, send, rv_fb, 7000) * rv_wet) >> 7;
+      dright += (reverb_side(1, send, rv_fb, 7000) * rv_wet) >> 7;
+    }
+    out[2 * i] += soft16((dl * 5) >> 3);
+    out[2 * i + 1] += soft16((dright * 5) >> 3);
+  }
+  settle(&lvl_lead, pk_lead);
+  for (v = 0; v < 4; v++) {
+    settle(&lvl_chord[v], pk_chord[v]);
+    settle(&lvl_drone[v], pk_drone[v]);
+  }
+  for (v = 0; v < 11; v++) {
+    settle(&lvl_taraf[v], pk_taraf[v]);
   }
 }
 
 /* ================================================================ the screen */
 
-#define ACCENT RGB(255, 170, 60)
-#define SAFFRON RGB(255, 120, 30)
-#define TEAL RGB(80, 200, 190)
-#define DIM RGB(100, 100, 100)
-#define FAINT RGB(45, 45, 45)
+#define IVORY 0xf4ecd8u
+#define MARIGOLD 0xf5a623u
+#define ROSE 0xe8879cu
+#define MIST 0x9295c6u
+#define DUSK 0x3d4290u
+#define INK 0x1d2152u
+#define WARM 0xfff4dcu
 
-static void fill_text(int x, int y, int w, const char *s, uint16_t c, int font) {
-  rect(x, y, w, text_height(font), BLACK);
-  text(x, y, s, c, font);
-}
-static void centered(int y, const char *s, uint16_t c, int font) {
-  rect(0, y, SCREEN_W, text_height(font), BLACK);
-  text((SCREEN_W - text_width(s, font)) / 2, y, s, c, font);
-}
-static char *cat(char *d, const char *s) {
-  while (*s) {
-    *d++ = *s++;
+#define CX 120
+#define CY 124
+#define RING_R 62
+#define BEAD_R 11
+#define LETTER_R 81
+
+static int bead_x[12], bead_y[12]; /* Q4 */
+
+enum { C_IDLE,
+       C_NOTE,
+       C_CHORD,
+       C_TIP };
+enum { TIP_TONE,
+       TIP_TARAF,
+       TIP_SUSTAIN,
+       TIP_MEEND,
+       TIP_THAAT,
+       TIP_SA,
+       TIP_MODE,
+       TIP_DRONE,
+       TIP_OCTAVE,
+       TIP_DRONE_LVL,
+       TIP_REVERB,
+       TIP_JHALA };
+
+/* what the screen shows: loop() works it out, compares it with what is drawn, and repaints what differs */
+typedef struct {
+  uint8_t thaat, sa, mode, drone, reverb, jhala;
+  int8_t octave, active_knob;
+  uint8_t knob[4];
+  uint8_t play[12], symp[12], ripple[12]; /* 0..16 */
+  int16_t comet;                          /* angle, or -1 */
+  int16_t arc;                            /* the interval arc's end angle, or -1 */
+  uint16_t chord_pcs;
+  uint8_t center, breath, tip;
+  int16_t note; /* C_NOTE: MIDI note */
+  uint8_t root, kind, bass, interval; /* C_CHORD: kind 255 = two notes (an interval), 254 = unnamed */
+  uint8_t dstr[4];
+  uint8_t egg, twinkle; /* for Sylmira */
+} view_t;
+static view_t cur, drawn;
+
+static int bead_ang(int s) { return (s * 1024 + 6) / 12; }
+
+/* ---- the parts of the picture */
+
+static void draw_gauges(void) {
+  static const char *const NAME[4] = {"Tone", "Taraf", "Sustain", "Meend"};
+  if (!gfx_touches(0, 0, SCREEN_W, 42)) {
+    return;
   }
-  *d = 0;
-  return d;
-}
-
-static void draw_header(void) {
-  rect(0, 0, SCREEN_W, 56, BLACK);
-  text(4, 2, "BE HERE NOW", ACCENT, FONT_SMALL);
-  const char *mode = saved.mode == MODE_SAROD ? "SAROD" : "CHORD";
-  text(SCREEN_W - 4 - text_width(mode, FONT_SMALL), 2, mode, TEAL, FONT_SMALL);
-  if (drone_on) {
-    text(104, 2, "DRONE", SAFFRON, FONT_SMALL);
+  for (int k = 0; k < 4; k++) {
+    int x = 30 + 60 * k, on = cur.active_knob == k;
+    int end = 640 + (768 * cur.knob[k]) / 127;
+    gfx_arc(x * 16, 16 * 16, 10 * 16, 48, 640, 640 + 768, DUSK, 256);
+    if (on) {
+      gfx_glow(x, 16, 18, MARIGOLD, 50);
+    }
+    gfx_arc(x * 16, 16 * 16, 10 * 16, 48, 640, end > 641 ? end : 641, on ? WARM : MARIGOLD, 256);
+    int ex = x * 16 + ((10 * 16 * isin(end)) >> 14), ey = 16 * 16 - ((10 * 16 * icos(end)) >> 14);
+    gfx_disc(ex, ey, 40, on ? WARM : MARIGOLD, 256);
+    gfx_text_c(&F_SMALL, x, 39, NAME[k], on ? IVORY : MIST, 256);
   }
-  char s[40], *p = s;
-  p = cat(p, THAAT[saved.thaat].name);
-  p = cat(p, " = ");
-  cat(p, THAAT[saved.thaat].western);
-  centered(20, s, WHITE, FONT_SMALL);
-  p = cat(s, "Sa = ");
-  cat(p, NOTE[saved.sa]);
-  centered(38, s, DIM, FONT_SMALL);
 }
 
-/* the 12 notes above Sa, S r R g G m M P d D n N: the thaat's bright, the others faint, the played ones lit */
-static void draw_strip(uint16_t lit) {
-  uint16_t mask = THAAT[saved.thaat].mask;
+static void draw_band(void) {
+  if (!gfx_touches(0, 206, SCREEN_W, SCREEN_H)) {
+    return;
+  }
+  const thaat_t *t = &THAAT[cur.thaat];
+  gfx_text(&F_MED, 10, 225, t->name, IVORY, 256);
+  gfx_text(&F_SMALL, 10, 238, t->western, MIST, 256);
+  gfx_text(&F_MED, 112, 225, NOTE[cur.sa], IVORY, 256);
+  gfx_text(&F_SMALL, 112, 238, "Sa", MIST, 256);
+  gfx_text(&F_MED, 152, 225, cur.mode == MODE_SAROD ? "Sarod" : "Chord", IVORY, 256);
+  gfx_text(&F_SMALL, 152, 238, cur.jhala ? "jhala on" : cur.drone ? "drone on" : "drone off", MIST, 256);
+  /* the tanpura's four strings: lit as each is plucked */
+  for (int s = 0; s < 4; s++) {
+    int x = (216 + s * 5) * 16 + 8;
+    uint32_t c = cur.drone ? mix(IVORY, MARIGOLD, cur.dstr[s] * 16) : DUSK;
+    int a = cur.drone ? 110 + cur.dstr[s] * 9 : 256;
+    if (cur.drone && cur.dstr[s] > 2) {
+      gfx_glow(216 + s * 5, 224, 7, MARIGOLD, cur.dstr[s] * 6);
+    }
+    gfx_line(x, 211 * 16, x, 237 * 16, 22, c, a > 256 ? 256 : a);
+  }
+}
+
+static void draw_bead(int s) {
+  int bx = bead_x[s], by = bead_y[s], px = bx >> 4, py = by >> 4;
+  if (!gfx_touches(px - 30, py - 30, px + 31, py + 31)) {
+    return;
+  }
+  int in = THAAT[cur.thaat].mask >> s & 1, p = cur.play[s], y = cur.symp[s];
+  if (y) { /* a sympathetic string answering: a rose aura */
+    gfx_glow(px, py, 25, ROSE, y * 10);
+    gfx_ring(bx, by, BEAD_R * 16 + 40, 26, ROSE, y * 15 > 240 ? 240 : y * 15);
+  }
+  if (p) {
+    gfx_glow(px, py, 26, MARIGOLD, p * 11);
+  }
+  if (cur.ripple[s]) {
+    int r = BEAD_R * 16 + cur.ripple[s] * 22;
+    gfx_ring(bx, by, r, 20, MARIGOLD, 200 - cur.ripple[s] * 18);
+  }
+  uint32_t ink;
+  if (s == 0 || in) {
+    uint32_t base = s == 0 ? MARIGOLD : IVORY;
+    gfx_disc(bx, by, BEAD_R * 16, p ? mix(base, WARM, p * 12) : base, 256);
+    ink = INK;
+  } else {
+    gfx_disc(bx, by, BEAD_R * 16, p ? mix(INK, MARIGOLD, p * 10) : INK, 220);
+    gfx_ring(bx, by, BEAD_R * 16 - 8, 18, p ? MARIGOLD : DUSK, 256);
+    ink = p ? IVORY : MIST;
+  }
+  const glyph_t *g = &DEV_S[SYL[s]];
+  int gx = px - g->w / 2 - g->x, gy = py - g->y - (g->h + 1) / 2;
+  if (MARK[s] == 1) {
+    gy -= 2;
+  }
+  gfx_image(g, DEV_S_data, gx, gy, ink, 256);
+  if (MARK[s] == 1) { /* komal: a line below */
+    gfx_line((px - 4) * 16, (py + 6) * 16 + 4, (px + 4) * 16, (py + 6) * 16 + 4, 18, ink, 256);
+  } else if (MARK[s] == 2) { /* tivra: a stroke above */
+    gfx_line(px * 16 + 8, (py - 9) * 16, px * 16 + 8, (py - 6) * 16, 18, ink, 256);
+  }
+}
+
+static void draw_letter(int s) {
+  int ang = bead_ang(s);
+  int lx = CX + ((LETTER_R * isin(ang)) >> 14), ly = CY - ((LETTER_R * icos(ang)) >> 14);
+  if (!gfx_touches(lx - 12, ly - 10, lx + 12, ly + 10)) {
+    return;
+  }
+  int p = cur.play[s];
+  gfx_text_c(&F_SMALL, lx, ly + 4, NOTE[(cur.sa + s) % 12], p ? mix(MIST, IVORY, p * 16) : mix(MIST, DUSK, 90), 256);
+}
+
+/* the chord's shape: its notes joined around the circle */
+static void draw_shape(void) {
+  if (!cur.chord_pcs || !gfx_touches(CX - 70, CY - 70, CX + 70, CY + 70)) {
+    return;
+  }
+  int first = -1, prev = -1;
   for (int s = 0; s < 12; s++) {
-    int x = s * 20;
-    uint16_t bg = lit >> s & 1 ? ACCENT : mask >> s & 1 ? RGB(60, 60, 60)
-                                                        : BLACK;
-    rect(x + 1, 170, 18, 20, bg);
-    uint16_t fg = lit >> s & 1 ? BLACK : mask >> s & 1 ? WHITE
-                                                       : FAINT;
-    text(x + 6, 172, SHORT[s], fg, FONT_SMALL);
-  }
-}
-
-/* the FM-1's 27 keys: thaat notes marked, Sa in saffron, held keys lit */
-static void draw_keys(uint32_t lit, int base) {
-  static const uint8_t BLACK_KEY[12] = {0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0}; /* from F */
-  uint16_t mask = THAAT[saved.thaat].mask;
-  int x = 8;
-  rect(0, 116, SCREEN_W, 52, BLACK);
-  for (int pass = 0; pass < 2; pass++) {
-    x = 8;
-    for (int k = 0; k < KEY_COUNT; k++) {
-      int pc = ((base + k) % 12 - saved.sa + 24) % 12; /* semitones above Sa */
-      int black = BLACK_KEY[k % 12];
-      int on = lit >> k & 1;
-      if (!black && pass == 0) {
-        rect(x, 118, 13, 48, on ? ACCENT : RGB(210, 210, 210));
-        if (!on && mask >> pc & 1) {
-          rect(x + 4, 156, 5, 5, pc == 0 ? SAFFRON : TEAL);
-        }
-      } else if (black && pass == 1) {
-        rect(x - 5, 118, 9, 28, on ? ACCENT : RGB(20, 20, 20));
-        if (!on && mask >> pc & 1) {
-          rect(x - 3, 137, 5, 5, pc == 0 ? SAFFRON : TEAL);
-        }
+    if (cur.chord_pcs >> s & 1) {
+      if (prev >= 0) {
+        gfx_line(bead_x[prev], bead_y[prev], bead_x[s], bead_y[s], 30, MARIGOLD, 190);
+      } else {
+        first = s;
       }
-      if (!black) {
-        x += 14;
-      }
+      prev = s;
     }
   }
+  if (first >= 0 && prev != first) {
+    gfx_line(bead_x[prev], bead_y[prev], bead_x[first], bead_y[first], 30, MARIGOLD, 190);
+  }
 }
 
-static const char *const KNOB_NAME[4] = {"TONE", "TARAF", "SUSTAIN", "MEEND"};
-static const char *const KNOB_TIP[4] = {"TONE: bright or dark pluck",
-                                        "TARAF: sympathetic strings",
-                                        "SUSTAIN: how long it rings",
-                                        "MEEND: slide time, 0 = off"};
-static void draw_knob(int k) {
-  char v[12];
-  int x = k * 60;
-  format_int(v, saved.knob[k]);
-  rect(x, 196, 60, 44, BLACK);
-  text(x + (60 - text_width(KNOB_NAME[k], FONT_SMALL)) / 2, 196, KNOB_NAME[k], DIM, FONT_SMALL);
-  text(x + (60 - text_width(v, FONT_BIG)) / 2, 210, v, ACCENT, FONT_BIG);
+/* centre text with a soft dark edge, readable over the chord's lines */
+#define HALO 0x0f1132u
+static int text_h(const font_t *f, int x, int y, const char *s, uint32_t c) {
+  gfx_text(f, x - 1, y, s, HALO, 150);
+  gfx_text(f, x + 1, y, s, HALO, 150);
+  gfx_text(f, x, y - 1, s, HALO, 150);
+  gfx_text(f, x, y + 1, s, HALO, 150);
+  return gfx_text(f, x, y, s, c, 256);
+}
+static void text_hc(const font_t *f, int cx, int y, const char *s, uint32_t c) {
+  text_h(f, cx - gfx_text_width(f, s) / 2, y, s, c);
 }
 
-/* the middle: what you are playing, and what it is called */
-static uint32_t tip_until;
-static int tip_active, idle;
-static void show_tip(const char *a, const char *b) {
-  idle = 0;
-  rect(0, 58, SCREEN_W, 58, BLACK);
-  centered(64, a, ACCENT, FONT_SMALL);
-  centered(86, b, WHITE, FONT_SMALL);
-  tip_until = millis() + 2500u;
-  tip_active = 1;
+static void center_note(void) {
+  int n = cur.note, pc = n % 12, rel = (pc - cur.sa + 12) % 12, in = THAAT[cur.thaat].mask >> rel & 1;
+  char oct[4];
+  format_int(oct, n / 12 - 1);
+  int w = gfx_text_width(&F_BIG, NOTE[pc]) + 2 + gfx_text_width(&F_MED, oct);
+  int x = gfx_text(&F_BIG, CX - w / 2, CY - 11, NOTE[pc], IVORY, 256);
+  gfx_text(&F_MED, x + 2, CY - 27, oct, MIST, 256);
+  /* the sargam: Devanagari and its name */
+  const glyph_t *g = &DEV_L[SYL[rel]];
+  int w2 = g->adv + 6 + gfx_text_width(&F_BODY, SARGAM[rel]), x2 = CX - w2 / 2;
+  gfx_image(g, DEV_L_data, x2, CY + 15, MARIGOLD, 256);
+  int gx = x2 + g->x, gw = g->w;
+  if (MARK[rel] == 1) {
+    gfx_line((gx + 1) * 16, (CY + 19) * 16, (gx + gw - 1) * 16, (CY + 19) * 16, 22, MARIGOLD, 256);
+  } else if (MARK[rel] == 2) {
+    gfx_line((gx + gw / 2) * 16, (CY - 5) * 16, (gx + gw / 2) * 16, (CY + 0) * 16, 22, MARIGOLD, 256);
+  }
+  gfx_text(&F_BODY, x2 + g->adv + 6, CY + 14, SARGAM[rel], IVORY, 256);
+  if (in) {
+    gfx_text_c(&F_SMALL, CX, CY + 31, INTERVAL[rel], MIST, 256);
+  } else {
+    char s[32];
+    cat(cat(s, "not in "), THAAT[cur.thaat].name);
+    gfx_text_c(&F_SMALL, CX, CY + 31, s, ROSE, 256);
+  }
 }
 
-/* idle: a mala of 12 beads, one per note above Sa (Sa at the top, clockwise), breathing in and out */
-static const int16_t SIN12[12] = {0, 128, 222, 256, 222, 128, 0, -128, -222, -256, -222, -128}; /* Q8 */
-static void draw_mala(void) {
-  uint32_t ph = millis() % 8000u;                                   /* one breath: 4 s in, 4 s out */
-  int in = ph < 4000u, r = 14 + (int)((in ? ph : 8000u - ph) * 10u / 4000u);
-  static int r_drawn = -1, in_drawn = -1;
-  if (r == r_drawn && in == in_drawn) {
+static void center_chord(void) {
+  char s[24];
+  if (cur.kind == 255) { /* two notes: the interval between them */
+    cat(cat(cat(s, NOTE[cur.root]), " to "), NOTE[cur.bass]);
+    text_hc(&F_MED, CX, CY - 4, s, IVORY);
+    text_hc(&F_SMALL, CX, CY + 14, cur.interval ? INTERVAL[cur.interval] : "octave", MARIGOLD);
+    char n[12];
+    format_int(n, cur.interval);
+    cat(cat(s, n), cur.interval == 1 ? " semitone" : " semitones");
+    text_hc(&F_SMALL, CX, CY + 28, s, MIST);
     return;
   }
-  uint16_t mask = THAAT[saved.thaat].mask;
-  rect(8, 58, 64, 58, BLACK);
+  if (cur.kind == 254) {
+    text_hc(&F_MED, CX, CY + 2, "no common name", MIST);
+    return;
+  }
+  const chord_t *c = &CHORD[cur.kind];
+  char q[16];
+  char *e = cat(q, c->sym);
+  if (cur.bass != cur.root) {
+    cat(cat(e, "/"), NOTE[cur.bass]);
+  }
+  int w = gfx_text_width(&F_BIG, NOTE[cur.root]) + 2 + gfx_text_width(&F_MED, q);
+  int x = text_h(&F_BIG, CX - w / 2, CY - 4, NOTE[cur.root], IVORY);
+  text_h(&F_MED, x + 2, CY - 4, q, MARIGOLD);
+  text_hc(&F_SMALL, CX, CY + 14, c->what, IVORY);
+  text_hc(&F_SMALL, CX, CY + 28, c->feel, MIST);
+}
+
+static void tip_text(int tip, const char **title, const char **a, const char **b, char *buf) {
+  static const char *const KT[4][3] = {{"Tone", "how bright", "the pluck is"},
+                                       {"Taraf", "strings that ring", "in sympathy"},
+                                       {"Sustain", "how long", "each note rings"},
+                                       {"Meend", "hold a key, press", "another: glide"}};
+  static const char *const RV[3][3] = {{"Hall", "reverb: a warm,", "open space"},
+                                       {"Room", "reverb: a small", "quiet room"},
+                                       {"Dry", "no reverb,", "just the strings"}};
+  *a = *b = "";
+  switch (tip) {
+    case TIP_TONE:
+    case TIP_TARAF:
+    case TIP_SUSTAIN:
+    case TIP_MEEND:
+      *title = KT[tip][0], *a = KT[tip][1], *b = KT[tip][2];
+      break;
+    case TIP_THAAT:
+      *title = THAAT[cur.thaat].name, *a = "parent scale of", *b = THAAT[cur.thaat].raga;
+      break;
+    case TIP_SA:
+      cat(cat(buf, "Sa is "), NOTE[cur.sa]);
+      *title = buf, *a = "the home note:", *b = "the drone follows";
+      break;
+    case TIP_MODE:
+      *title = cur.mode == MODE_SAROD ? "Sarod" : "Chord";
+      *a = cur.mode == MODE_SAROD ? "one string that" : "hold keys to see";
+      *b = cur.mode == MODE_SAROD ? "slides (meend)" : "a chord's shape";
+      break;
+    case TIP_DRONE:
+      *title = cur.drone ? "Drone on" : "Drone off";
+      *a = cur.drone ? "tanpura strings:" : "PLAY starts";
+      *b = cur.drone ? "play over them" : "the tanpura";
+      break;
+    case TIP_OCTAVE: {
+      char n[8];
+      format_int(n, 3 + cur.octave);
+      cat(cat(buf, "keys start at F"), n);
+      *title = "Octave", *a = buf;
+      break;
+    }
+    case TIP_DRONE_LVL: {
+      char n[8];
+      format_int(n, saved.drone_lvl);
+      cat(cat(buf, n), " of 8");
+      *title = "Drone level", *a = buf;
+      break;
+    }
+    case TIP_REVERB:
+      *title = RV[cur.reverb][0], *a = RV[cur.reverb][1], *b = RV[cur.reverb][2];
+      break;
+    case TIP_JHALA:
+      *title = cur.jhala ? "Jhala on" : "Jhala off";
+      *a = cur.jhala ? "hold a note: high" : "ARP turns on";
+      *b = cur.jhala ? "strings strum" : "the strumming";
+      break;
+  }
+}
+
+static void center_tip(void) {
+  const char *title, *a, *b;
+  char buf[32];
+  tip_text(cur.tip, &title, &a, &b, buf);
+  gfx_text_c(&F_MED, CX, CY - 12, title, IVORY, 256);
+  gfx_text_c(&F_SMALL, CX, CY + 5, a, MIST, 256);
+  gfx_text_c(&F_SMALL, CX, CY + 19, b, MIST, 256);
+}
+
+static void center_idle(void) {
+  int b = (16384 - icos(cur.breath * 16)) >> 7; /* 0..256: in, then out */
+  gfx_glow(CX, CY, 22 + (b * 20 >> 8), mix(ROSE, IVORY, 120), 34 + (b * 46 >> 8));
+  gfx_glow(CX, CY, 8 + (b * 8 >> 8), IVORY, 40 + (b * 40 >> 8));
+  gfx_text_c(&F_BODY, CX, CY + 5, "be here now", IVORY, 200 + (b * 56 >> 8));
+  gfx_text_c(&F_SMALL, CX, CY + 22, cur.breath < 32 ? "breathe in" : "breathe out", MIST, 140 + (b * 60 >> 8));
+}
+
+/* ---- for Sylmira: the mala becomes a friendship bracelet */
+static const uint32_t PASTEL[6] = {0xf7b7d2u, 0xc9b6f2u, 0xa9d8f5u, 0xb8ebd0u, 0xfbe7a1u, 0xffc9a8u};
+static const char *const BRACELET[12] = {"S", "Y", "L", "M", "I", "R", "A", "\x03", "1", "3", "\x04", "\x03"};
+
+static void draw_bracelet(void) {
+  gfx_ring(CX * 16, CY * 16, RING_R * 16, 26, 0xc9b6f2u, 230); /* the cord */
   for (int s = 0; s < 12; s++) {
-    int x = 40 + ((SIN12[s] * r) >> 8), y = 87 - ((SIN12[(s + 3) % 12] * r) >> 8);
-    uint16_t c = s == 0 ? SAFFRON : mask >> s & 1 ? TEAL
-                                                  : FAINT;
-    rect(x - 2, y - 2, 5, 5, c);
-  }
-  rect(39, 86, 3, 3, r > 21 ? ACCENT : DIM); /* the guru bead */
-  if (in != in_drawn) {
-    rect(80, 98, 160, 16, BLACK);
-    text(80, 98, in ? "breathe in" : "breathe out", FAINT, FONT_SMALL);
-  }
-  r_drawn = r, in_drawn = in;
-}
-
-static void draw_note(int note) {
-  rect(0, 58, SCREEN_W, 58, BLACK);
-  idle = note < 0;
-  if (note < 0) {
-    text(80, 62, "be here now", WHITE, FONT_SMALL);
-    text(80, 80, RAGA_EG[saved.thaat], DIM, FONT_SMALL);
-    text(80, 98, "breathe in", FAINT, FONT_SMALL);
-    draw_mala();
-    return;
-  }
-  int pc = note % 12, rel = (pc - saved.sa + 12) % 12;
-  char s[40], *p;
-  /* "G4" big, then "Pa" */
-  p = cat(s, NOTE[pc]);
-  format_int(p, note / 12 - 1);
-  int w = text_width(s, FONT_BIG), w2 = text_width(SARGAM[rel], FONT_SMALL);
-  int x = (SCREEN_W - w - 10 - w2) / 2;
-  text(x, 60, s, WHITE, FONT_BIG);
-  text(x + w + 10, 72, SARGAM[rel], rel ? TEAL : SAFFRON, FONT_SMALL);
-  p = cat(s, INTERVAL[rel]);
-  cat(p, " above Sa");
-  if (!rel) {
-    cat(s, "the home note");
-  }
-  int in = THAAT[saved.thaat].mask >> rel & 1;
-  centered(96, in ? s : "not in this thaat", in ? DIM : SAFFRON, FONT_SMALL);
-}
-
-static void draw_chord(const int *notes, int n) {
-  idle = 0;
-  rect(0, 58, SCREEN_W, 58, BLACK);
-  uint16_t pcs = 0;
-  int low = 127;
-  for (int i = 0; i < n; i++) {
-    pcs |= (uint16_t)(1u << (notes[i] % 12));
-    low = notes[i] < low ? notes[i] : low;
-  }
-  char s[40], *p;
-  if (n == 1) {
-    draw_note(notes[0]);
-    return;
-  }
-  /* try each held note as the root, the lowest first */
-  for (int t = 0; t < 12; t++) {
-    int root = (low + t) % 12;
-    if (!(pcs >> root & 1)) {
+    int bx = bead_x[s], by = bead_y[s], px = bx >> 4, py = by >> 4;
+    if (!gfx_touches(px - 30, py - 30, px + 31, py + 31)) {
       continue;
     }
-    uint16_t rel = (uint16_t)(((pcs >> root) | (pcs << (12 - root))) & 0xFFF);
-    for (int c = 0; c < CHORDS; c++) {
-      if (rel == CHORD[c].mask) {
-        p = cat(s, NOTE[root]);
-        p = cat(p, " ");
-        p = cat(p, CHORD[c].name);
-        if (root != low % 12) { /* an inversion: say which note is at the bottom */
-          p = cat(p, "/");
-          cat(p, NOTE[low % 12]);
-        }
-        centered(60, s, WHITE, FONT_BIG);
-        centered(96, CHORD[c].what, DIM, FONT_SMALL);
-        return;
+    uint32_t c = PASTEL[(s + cur.twinkle / 6) % 6];
+    gfx_glow(px, py, 22, c, 60);
+    gfx_disc(bx, by, (BEAD_R + 1) * 16, c, 256);
+    gfx_disc(bx - 50, by - 50, 40, 0xffffffu, 140); /* a glossy highlight */
+    int w = gfx_text_width(&F_MED, BRACELET[s]);
+    gfx_text(&F_MED, px - w / 2, py + 6, BRACELET[s], s >= 7 && s != 8 && s != 9 ? 0xd94f86u : INK, 256);
+  }
+}
+
+static uint32_t hash32(uint32_t v) {
+  v ^= v >> 16, v *= 0x45d9f3bu, v ^= v >> 16, v *= 0x45d9f3bu, v ^= v >> 16;
+  return v;
+}
+
+static void center_egg(void) {
+  gfx_glow(CX, CY, 46, 0xf7b7d2u, 60);
+  for (int i = 0; i < 9; i++) { /* sparkles that come and go */
+    uint32_t cyc = (cur.twinkle + i * 11u) / 16u, h = hash32(i * 977u + cyc * 131u);
+    int ph = (cur.twinkle + i * 11) % 16, a = ph < 8 ? ph * 32 : (16 - ph) * 32;
+    int ang = (int)(h & 1023), r = 14 + (int)(h >> 10) % 32;
+    int x = CX + ((r * isin(ang)) >> 14), y = CY - ((r * icos(ang)) >> 14);
+    gfx_glow(x, y, 6, PASTEL[i % 6], a);
+    gfx_disc(x * 16 + 8, y * 16 + 8, 10 + ph % 3 * 4, 0xffffffu, a);
+  }
+  text_hc(&F_MED, CX, CY + 1, "for Sylmira", 0xffd1e3u);
+  text_hc(&F_SMALL, CX, CY + 18, "with love", IVORY);
+}
+
+static void scene(void) {
+  gfx_background();
+  if (cur.egg && gfx_touches(CX - 90, CY - 90, CX + 91, CY + 91)) {
+    draw_bracelet();
+    if (gfx_touches(CX - 52, CY - 52, CX + 53, CY + 53)) {
+      center_egg();
+    }
+  } else if (gfx_touches(CX - 90, CY - 90, CX + 91, CY + 91)) {
+    gfx_ring(CX * 16, CY * 16, RING_R * 16, 20, DUSK, 256);
+    if (cur.arc > 0) {
+      gfx_arc(CX * 16, CY * 16, RING_R * 16, 56, 0, cur.arc, MARIGOLD, 170);
+    }
+    draw_shape();
+    if (cur.center != C_IDLE && gfx_touches(CX - 52, CY - 52, CX + 53, CY + 53)) {
+      gfx_glow(CX, CY, 50, 0x111338u, 150); /* a quiet pool for the words */
+    }
+    for (int s = 0; s < 12; s++) {
+      draw_bead(s);
+      draw_letter(s);
+    }
+    if (cur.comet >= 0) {
+      int x = CX * 16 + ((RING_R * 16 * isin(cur.comet)) >> 14), y = CY * 16 - ((RING_R * 16 * icos(cur.comet)) >> 14);
+      gfx_glow(x >> 4, y >> 4, 14, MARIGOLD, 200);
+      gfx_disc(x, y, 56, WARM, 256);
+    }
+    if (gfx_touches(CX - 52, CY - 52, CX + 53, CY + 53)) {
+      switch (cur.center) {
+        case C_IDLE:
+          center_idle();
+          break;
+        case C_NOTE:
+          center_note();
+          break;
+        case C_CHORD:
+          center_chord();
+          break;
+        default:
+          center_tip();
+          break;
       }
     }
   }
-  if (n == 2) { /* two notes: name the interval */
-    int a = notes[0] < notes[1] ? notes[0] : notes[1], b = notes[0] ^ notes[1] ^ a;
-    p = cat(s, NOTE[a % 12]);
-    p = cat(p, " + ");
-    cat(p, NOTE[b % 12]);
-    centered(60, s, WHITE, FONT_BIG);
-    p = cat(s, (b - a) % 12 ? INTERVAL[(b - a) % 12] : "octave");
-    if (b - a > 12) {
-      cat(p, " + octave");
-    }
-    centered(96, s, DIM, FONT_SMALL);
+  draw_gauges();
+  draw_band();
+}
+
+/* ---- what changed since the last picture: mark only that for repainting */
+
+static void dirty_bead(int s) {
+  int px = bead_x[s] >> 4, py = bead_y[s] >> 4;
+  gfx_dirty(px - 28, py - 28, px + 29, py + 29);
+  int ang = bead_ang(s), lx = CX + ((LETTER_R * isin(ang)) >> 14), ly = CY - ((LETTER_R * icos(ang)) >> 14);
+  gfx_dirty(lx - 12, ly - 10, lx + 12, ly + 10);
+}
+static void dirty_ring_point(int ang, int pad) {
+  int x = CX + ((RING_R * isin(ang)) >> 14), y = CY - ((RING_R * icos(ang)) >> 14);
+  gfx_dirty(x - pad, y - pad, x + pad + 1, y + pad + 1);
+}
+static void dirty_center(void) { gfx_dirty(CX - 52, CY - 52, CX + 53, CY + 53); }
+static void dirty_wheel(void) { gfx_dirty(CX - 92, CY - 92, CX + 93, CY + 93); }
+
+static void repaint_changes(void) {
+  view_t *a = &cur, *b = &drawn;
+  if (a->thaat != b->thaat || a->sa != b->sa || a->egg != b->egg) {
+    gfx_dirty_all();
+    *b = *a;
     return;
   }
-  p = s;
-  for (int i = 0; i < 12; i++) {
-    if (pcs >> i & 1) {
-      p = cat(p, NOTE[i]);
-      p = cat(p, " ");
+  for (int k = 0; k < 4; k++) {
+    if (a->knob[k] != b->knob[k] || (a->active_knob == k) != (b->active_knob == k)) {
+      gfx_dirty(k * 60, 0, k * 60 + 60, 42);
     }
   }
-  centered(64, s, WHITE, FONT_SMALL);
-  centered(86, "no common chord name", DIM, FONT_SMALL);
+  if (a->mode != b->mode || a->drone != b->drone || a->jhala != b->jhala) {
+    gfx_dirty(150, 206, SCREEN_W, SCREEN_H);
+  }
+  for (int s = 0; s < 4; s++) {
+    if (a->dstr[s] != b->dstr[s]) {
+      gfx_dirty(206 + s * 5, 206, 227 + s * 5, SCREEN_H);
+    }
+  }
+  if (a->chord_pcs != b->chord_pcs) {
+    dirty_wheel();
+  }
+  if (a->arc != b->arc) {
+    int d = a->arc - b->arc;
+    if (a->arc > 0 && b->arc > 0 && d > -100 && d < 100) { /* a short move: only the ends */
+      dirty_ring_point(a->arc, 8), dirty_ring_point(b->arc, 8);
+      dirty_ring_point((a->arc + b->arc) / 2, 8);
+    } else {
+      dirty_wheel();
+    }
+  }
+  if (a->comet != b->comet) {
+    if (b->comet >= 0) {
+      dirty_ring_point(b->comet, 16);
+    }
+    if (a->comet >= 0) {
+      dirty_ring_point(a->comet, 16);
+    }
+  }
+  for (int s = 0; s < 12; s++) {
+    if (a->play[s] != b->play[s] || a->symp[s] != b->symp[s] || a->ripple[s] != b->ripple[s]) {
+      dirty_bead(s);
+    }
+  }
+  if (a->egg && a->twinkle != b->twinkle) {
+    if (a->twinkle / 6 != b->twinkle / 6) {
+      dirty_wheel(); /* the bead colours drift */
+    } else {
+      dirty_center();
+    }
+  }
+  if (a->center != b->center || a->breath != b->breath || a->tip != b->tip || a->note != b->note ||
+      a->root != b->root || a->kind != b->kind || a->bass != b->bass || a->interval != b->interval ||
+      a->octave != b->octave || a->reverb != b->reverb) {
+    dirty_center();
+  }
+  *b = *a;
 }
 
 /* ================================================================ notes */
 
-static int stack[KEY_COUNT + 16], depth; /* the held notes, oldest first (SAROD mode) */
-static uint8_t chord_age[4];
+static int stack[KEY_COUNT + 16], depth; /* the held notes, oldest first (Sarod mode) */
+static uint8_t chord_age[4], chord_voice[4];
 
 static void play_on(int note, int vel) {
   if (saved.mode == MODE_SAROD) {
@@ -498,6 +890,7 @@ static void play_on(int note, int vel) {
       stack[depth++] = note;
     }
     lead_target = note * 256;
+    lead_held = 1;
     if (!legato) {
       lead_vel = vel;
       lead_plucks++;
@@ -511,6 +904,7 @@ static void play_on(int note, int vel) {
       }
     }
     chord_age[pick] = 0;
+    chord_voice[pick] = (uint8_t)note;
     chord_note[pick] = (uint32_t)note;
     chord_vel[pick] = (uint32_t)vel;
     chord_plucks[pick]++;
@@ -525,213 +919,332 @@ static void play_off(int note) {
     }
   }
   depth = j;
-  if (saved.mode == MODE_SAROD && depth > 0) {
-    lead_target = stack[depth - 1] * 256; /* slide back to the note still held */
+  if (saved.mode == MODE_SAROD) {
+    if (depth > 0) {
+      lead_target = stack[depth - 1] * 256; /* slide back to the note still held */
+    } else {
+      lead_held = 0;
+    }
   }
+}
+
+/* name what is held: fills root, kind, bass, interval */
+static void name_chord(const int *notes, int n, view_t *v) {
+  uint16_t pcs = 0;
+  int low = 127, high = 0;
+  for (int i = 0; i < n; i++) {
+    pcs |= (uint16_t)(1u << (notes[i] % 12));
+    low = notes[i] < low ? notes[i] : low;
+    high = notes[i] > high ? notes[i] : high;
+  }
+  v->bass = (uint8_t)(low % 12);
+  for (int t = 0; t < 12; t++) {
+    int root = (low + t) % 12;
+    if (!(pcs >> root & 1)) {
+      continue;
+    }
+    uint16_t rel = (uint16_t)(((pcs >> root) | (pcs << (12 - root))) & 0xFFF);
+    for (int c = 0; c < CHORDS; c++) {
+      if (rel == CHORD[c].mask && (n > 2 || c == 13)) {
+        v->root = (uint8_t)root, v->kind = (uint8_t)c;
+        return;
+      }
+    }
+  }
+  if (n == 2 || (pcs & (pcs - 1)) == 0) {
+    v->kind = 255, v->root = (uint8_t)(low % 12), v->bass = (uint8_t)(high % 12);
+    v->interval = (uint8_t)((high - low) % 12);
+    return;
+  }
+  v->kind = 254, v->root = (uint8_t)(low % 12);
 }
 
 /* ================================================================ setup / loop */
 
-/* the start screen: a lotus on still water */
-static void petal(int bx, int by, int tx, int ty, int w, uint16_t c) { /* a pointed petal from base to tip */
-  for (int i = -w; i <= w; i++) {
-    int mx = (bx + tx) / 2 + i, my = (by + ty) / 2 + (i < 0 ? -i : i) / 3;
-    line(bx, by, mx, my, c);
-    line(mx, my, tx, ty, c);
-  }
-}
-static void draw_splash(void) {
-  clear(BLACK);
-  uint16_t pink = RGB(235, 120, 150), deep = RGB(190, 60, 100), leaf = RGB(40, 120, 90);
-  for (int i = 0; i < 5; i++) { /* water */
-    line(30 + i * 9, 132 + i * 4, 210 - i * 9, 132 + i * 4, RGB(30, 60 + i * 12, 90 + i * 15));
-  }
-  petal(120, 128, 40, 104, 6, leaf);
-  petal(120, 128, 200, 104, 6, leaf);
-  petal(120, 126, 62, 76, 8, deep);
-  petal(120, 126, 178, 76, 8, deep);
-  petal(120, 126, 88, 56, 9, pink);
-  petal(120, 126, 152, 56, 9, pink);
-  petal(120, 126, 120, 40, 10, RGB(255, 170, 190));
-  rect(117, 18, 6, 6, SAFFRON); /* a drop of light */
-  centered(160, "BE HERE NOW", WHITE, FONT_BIG);
-  centered(200, "love  serve  remember", ACCENT, FONT_SMALL);
-  centered(220, "after Ram Dass", DIM, FONT_SMALL);
+static void make_string(string_t *s, int16_t *buf, uint32_t len, int32_t a, int32_t fb, int32_t ap, int32_t jaw) {
+  *s = (string_t){buf, len - 1, 0, 100u << 16, 0, a, fb, ap, 0, 0, jaw};
 }
 
 void setup(void) {
   settings_load(&saved, sizeof saved);
-  if (saved.octave < -2 || saved.octave > 2 || saved.thaat >= THAATS || saved.sa > 11 || saved.mode > 1) {
-    saved.octave = 0, saved.thaat = 1, saved.sa = 0, saved.mode = MODE_SAROD;
+  if (saved.octave < -2 || saved.octave > 2 || saved.thaat >= THAATS || saved.sa > 11 || saved.mode > 1 ||
+      saved.drone_lvl > 8 || saved.reverb > 2) {
+    saved.octave = 0, saved.thaat = 1, saved.sa = 0, saved.mode = MODE_SAROD, saved.drone_lvl = 4, saved.reverb = 0;
   }
   for (int k = 0; k < 4; k++) {
-    if (saved.knob[k] > 127) {
-      saved.knob[k] = 64;
-    }
+    saved.knob[k] = saved.knob[k] > 127 ? 64 : saved.knob[k];
   }
-  lead = (string_t){main_buf, 2047, 0, 200u << 16, 0, 12000, 32500};
+  make_string(&lead, lead_buf, 2048, 12000, 32500, AP_STIFF, 0);
   for (int v = 0; v < 4; v++) {
-    chord[v] = (string_t){chord_buf[v], 2047, 0, 200u << 16, 0, 12000, 32500};
-    drone[v] = (string_t){drone_buf[v], 1023, 0, 200u << 16, 0, 13500, 32720};
+    make_string(&chord[v], chord_buf[v], 2048, 12000, 32500, AP_STIFF, 0);
+    make_string(&drone[v], drone_buf[v], 1024, 14500, 32730, 0, 2600);
   }
   for (int v = 0; v < 11; v++) {
-    taraf[v] = (string_t){taraf_buf[v], 255, 0, 100u << 16, 0, 11000, 32690};
+    make_string(&taraf[v], taraf_buf[v], 256, 11000, 32690, 0, 0);
+  }
+  make_string(&chik[0], chik_buf[0], 256, 15000, 32300, AP_STIFF, 0);
+  make_string(&chik[1], chik_buf[1], 256, 15000, 32200, AP_STIFF, 0);
+  int16_t *p = rv_comb;
+  for (int c = 0; c < 8; c++) {
+    comb_at[c] = p, p += COMB_LEN[c];
+  }
+  p = rv_ap;
+  for (int a = 0; a < 4; a++) {
+    ap_at[a] = p, p += AP_LEN[a];
+  }
+  for (int s = 0; s < 12; s++) {
+    int ang = bead_ang(s);
+    bead_x[s] = CX * 16 + ((RING_R * 16 * isin(ang)) >> 14);
+    bead_y[s] = CY * 16 - ((RING_R * 16 * icos(ang)) >> 14);
   }
   lead_target = (60 + saved.sa) * 256;
   retune = 1;
   led_backlight(1);
-  draw_splash();
+  gfx_splash();
   print("BE HERE NOW: love, serve, remember");
 }
 
 void loop(void) {
   static uint8_t held[KEY_COUNT];
-  static uint32_t lit_drawn = ~0u, changed_at;
-  static int dirty, base_drawn = -999, note_dirty = 1;
-  static uint16_t strip_drawn = 0xFFFF;
+  static uint32_t changed_at, tip_until, note_until, last_frame;
+  static int dirty, ui, tip = -1, knob_on = -1;
+  static uint32_t seen_lead, seen_chord[4];
+  static uint8_t ripple[12];
+  static view_t keep; /* the last note or chord shown, held while it rings */
   int base = KEY_FIRST_NOTE + 12 * saved.octave;
   uint8_t st, d1, d2;
+  uint32_t now = millis();
 
-  /* the keys, and MIDI notes from a computer or keyboard */
+  /* the keys, and MIDI notes from a computer or a keyboard */
   for (int k = 0; k < KEY_COUNT; k++) {
     if (key_pressed(k)) {
       held[k] = (uint8_t)(base + k);
       play_on(held[k], 100);
       midi_send(0x90, held[k], 100);
-      note_dirty = 1;
     }
     if (key_released(k)) {
       play_off(held[k]);
       midi_send(0x80, held[k], 0);
-      note_dirty = 1;
     }
   }
   while (midi_read(&st, &d1, &d2)) {
     if ((st & 0xF0) == 0x90 && d2) {
       play_on(d1, d2);
-      note_dirty = 1;
     } else if ((st & 0xF0) == 0x80 || (st & 0xF0) == 0x90) {
       play_off(d1);
-      note_dirty = 1;
     }
   }
 
   /* the start screen stays 3 s, or until a key is played */
-  static int ui;
   if (!ui) {
-    if (millis() < 3000 && !keys()) {
+    if (now < 3000 && !keys()) {
       return;
     }
     ui = 1;
-    clear(BLACK);
-    draw_header();
-    for (int k = 0; k < 4; k++) {
-      draw_knob(k);
-    }
-    note_dirty = 1, lit_drawn = ~0u, strip_drawn = 0xFFFF;
+    gfx_dirty_all();
+    drawn.thaat = 255;
   }
 
   /* the controls */
-  int changed = 0;
+  int changed = 0, t = -1;
   int oct = saved.octave + button_pressed(BTN_OCT_UP) - button_pressed(BTN_OCT_DOWN);
   if (oct != saved.octave && oct >= -2 && oct <= 2) {
-    saved.octave = (int8_t)oct, changed = 1;
+    saved.octave = (int8_t)oct, changed = 1, t = TIP_OCTAVE;
   }
   int32_t e = encoder(ENC_PRESETS);
   if (e) {
     saved.thaat = (uint8_t)((saved.thaat + THAATS + (e > 0 ? 1 : -1)) % THAATS);
-    retune = 1, changed = 1;
-    draw_header();
-    show_tip("THAAT: parent scale of ragas", RAGA_EG[saved.thaat]);
+    retune = 1, changed = 1, t = TIP_THAAT;
   }
   e = encoder(ENC_ALGORITHM);
   if (e) {
     saved.sa = (uint8_t)((saved.sa + 12 + (e > 0 ? 1 : -1)) % 12);
-    retune = 1, changed = 1;
-    draw_header();
-    show_tip("SA: the home note, the tonic", "every other note is heard against it");
+    retune = 1, changed = 1, t = TIP_SA;
+  }
+  e = encoder(ENC_SELECT);
+  if (e) {
+    int l = saved.drone_lvl + (e > 0 ? 1 : -1);
+    saved.drone_lvl = (uint8_t)(l < 0 ? 0 : l > 8 ? 8
+                                                  : l);
+    changed = 1, t = TIP_DRONE_LVL;
   }
   if (button_pressed(BTN_SEL)) {
     saved.mode ^= 1;
-    depth = 0;
-    changed = 1;
-    draw_header();
-    show_tip(saved.mode == MODE_SAROD ? "SAROD: one string" : "CHORD: four strings",
-             saved.mode == MODE_SAROD ? "hold a key, press another: meend" : "hold keys to name the chord");
+    depth = 0, lead_held = 0;
+    changed = 1, t = TIP_MODE;
   }
   if (button_pressed(BTN_PLAY)) {
     drone_on ^= 1;
-    draw_header();
-    show_tip("DRONE: a tanpura plays Pa Sa Sa Sa", "hear each note against home");
+    t = TIP_DRONE;
+  }
+  if (button_pressed(BTN_ARP)) {
+    jhala ^= 1;
+    t = TIP_JHALA;
+  }
+  static uint32_t egg_until, egg_next, egg_from;
+  static int egg_i;
+  if (button_pressed(BTN_HOME)) { /* for Sylmira */
+    egg_from = now, egg_until = now + 12000, egg_next = now + 300, egg_i = 0;
+  }
+  if (egg_until && keys() && now - egg_from > 1500) {
+    egg_until = 0; /* playing brings the mala back */
+  }
+  if (egg_until && now >= egg_until) {
+    egg_until = 0;
+  }
+  if (egg_until && egg_i < 13 && now >= egg_next) {
+    /* a little shimmer of my own: up through Sa, Ga, Pa, Ni, Re, and home to a bright chord */
+    static const int8_t ARP[13] = {0, 7, 12, 16, 19, 23, 26, 28, 31, 24, 28, 31, 36};
+    int v = egg_i % 4, note = 60 + saved.sa + ARP[egg_i];
+    chord_note[v] = (uint32_t)note, chord_vel[v] = egg_i >= 9 ? 70 : 85, chord_plucks[v]++;
+    egg_next = now + (egg_i < 8 ? 150 : egg_i == 8 ? 260 : 40);
+    egg_i++;
+  }
+  if (button_pressed(BTN_FX)) {
+    saved.reverb = (uint8_t)((saved.reverb + 1) % 3);
+    changed = 1, t = TIP_REVERB;
   }
   for (int k = 0; k < 4; k++) {
     int32_t d = encoder(ENC_KNOB1 + k);
     if (d) {
       int v = saved.knob[k] + d * 2;
-      v = v < 0 ? 0 : v > 127 ? 127
-                              : v;
-      if (v != saved.knob[k]) {
-        saved.knob[k] = (uint8_t)v;
-        draw_knob(k);
-        changed = 1;
-        show_tip(KNOB_TIP[k], "");
-      }
+      saved.knob[k] = (uint8_t)(v < 0 ? 0 : v > 127 ? 127
+                                                    : v);
+      changed = 1, t = TIP_TONE + k, knob_on = k;
     }
   }
+  if (t >= 0) {
+    tip = t, tip_until = now + 2600;
+    if (t > TIP_MEEND) {
+      knob_on = -1;
+    }
+  }
+  if (tip >= 0 && now >= tip_until) {
+    tip = -1, knob_on = -1;
+  }
   if (changed) {
-    dirty = 1, changed_at = millis();
+    dirty = 1, changed_at = now;
   }
   led_button(BTN_OCT_DOWN, saved.octave < 0);
   led_button(BTN_OCT_UP, saved.octave > 0);
   led_button(BTN_PLAY, drone_on);
   led_button(BTN_SEL, saved.mode == MODE_CHORD);
+  led_button(BTN_ARP, jhala);
+  led_button(BTN_FX, saved.reverb != 2);
 
-  /* what is held: the keyboard picture, the strip, the key lights */
+  /* what is held */
   base = KEY_FIRST_NOTE + 12 * saved.octave;
-  uint32_t lit = 0;
-  uint16_t strip = 0;
   int notes[KEY_COUNT], n = 0;
   for (int k = 0; k < KEY_COUNT; k++) {
     if (key_held(k)) {
-      lit |= 1u << k;
       notes[n++] = held[k];
-      strip |= (uint16_t)(1u << ((held[k] % 12 - saved.sa + 12) % 12));
     }
     int pc = ((base + k) % 12 - saved.sa + 24) % 12;
     led_key(k, THAAT[saved.thaat].mask >> pc & 1);
   }
-  if (lit != lit_drawn || base != base_drawn || changed) {
-    lit_drawn = lit, base_drawn = base;
-    draw_keys(lit, base);
-  }
-  if (strip != strip_drawn || changed) {
-    strip_drawn = strip;
-    draw_strip(strip);
-  }
-  if (tip_active && millis() >= tip_until) {
-    tip_active = 0, note_dirty = 1;
-  }
-  if (!tip_active && !note_dirty && idle) {
-    static uint32_t anim;
-    if (millis() - anim >= 120u) { /* the breathing mala: a few frames a second, only its corner */
-      anim = millis();
-      draw_mala();
+
+  /* the picture, at most 30 times a second */
+  if (now - last_frame >= 33) {
+    last_frame = now;
+    view_t v = cur;
+    v.thaat = saved.thaat, v.sa = saved.sa, v.mode = saved.mode, v.drone = drone_on, v.reverb = saved.reverb;
+    v.jhala = jhala, v.octave = saved.octave, v.active_knob = (int8_t)knob_on;
+    for (int k = 0; k < 4; k++) {
+      v.knob[k] = saved.knob[k];
     }
-  }
-  if (!tip_active && note_dirty) {
-    note_dirty = 0;
+    /* the light of what sounds: the lead (or the chord strings), and the sympathetic strings */
+    uint16_t play[12] = {0}, symp[12] = {0};
+    int lead_pc = -1;
     if (saved.mode == MODE_SAROD) {
-      draw_note(depth ? stack[depth - 1] : (n ? notes[n - 1] : -1));
+      int32_t p = lead_now;
+      lead_pc = (((p + 128) >> 8) % 12 - saved.sa + 12) % 12;
+      play[lead_pc] = lvl_lead;
+      if (lead_struck != seen_lead) {
+        seen_lead = lead_struck, ripple[lead_pc] = 1;
+      }
     } else {
-      if (n) {
-        draw_chord(notes, n);
-      } else {
-        draw_note(-1);
+      for (int c = 0; c < 4; c++) {
+        int pc = (chord_voice[c] % 12 - saved.sa + 12) % 12;
+        play[pc] = lvl_chord[c] > play[pc] ? lvl_chord[c] : play[pc];
+        if (chord_struck[c] != seen_chord[c]) {
+          seen_chord[c] = chord_struck[c], ripple[pc] = 1;
+        }
       }
     }
-  }
+    for (int s = 0; s < 11; s++) {
+      int pc = taraf_pc[s];
+      uint16_t l = lvl_taraf[s];
+      symp[pc] = l > symp[pc] ? l : symp[pc];
+    }
+    uint32_t smax = 1;
+    for (int s = 0; s < 12; s++) {
+      smax = symp[s] > smax ? symp[s] : smax;
+    }
+    int sabs = (int)isqrt_u(smax * 6u) / 9; /* how strongly the loudest one rings */
+    sabs = sabs > 16 ? 16 : sabs;
+    for (int s = 0; s < 12; s++) {
+      /* only the strings that really answer: measured against the loudest, the faint ones stay dark */
+      int rel = symp[s] * 5u > smax * 3u ? (int)((symp[s] * 5u - smax * 3u) * 16u / (2u * smax)) : 0;
+      int lp = (int)isqrt_u(play[s] * 2u) / 9, ls = rel * sabs / 16;
+      v.play[s] = (uint8_t)(lp > 16 ? 16 : lp);
+      v.symp[s] = (uint8_t)(ls > 16 ? 16 : ls);
+      v.ripple[s] = ripple[s];
+      if (ripple[s] && ++ripple[s] > 10) {
+        ripple[s] = 0;
+      }
+    }
+    for (int s = 0; s < 4; s++) {
+      int l = (int)isqrt_u(lvl_drone[s]) / 14;
+      v.dstr[s] = (uint8_t)(l > 8 ? 8 : l);
+    }
 
-  if (dirty && !n && millis() - changed_at > 3000) { /* saving stalls the sound for a moment: wait */
+    /* the centre: a tip, the note, the chord, or the breath */
+    int sounding = saved.mode == MODE_SAROD ? lvl_lead > 900 : (lvl_chord[0] | lvl_chord[1] | lvl_chord[2] | lvl_chord[3]) > 900;
+    v.comet = -1, v.arc = -1, v.chord_pcs = 0;
+    if (n || sounding) {
+      note_until = now + 1500;
+    }
+    if (saved.mode == MODE_SAROD && (n || now < note_until)) {
+      int32_t p = lead_now;
+      v.center = C_NOTE;
+      v.note = (int16_t)(depth ? stack[depth - 1] : (p + 128) >> 8);
+      int rel = (int)((p - saved.sa * 256) % 3072 + 3072) % 3072; /* Q8 semitones above Sa */
+      v.arc = (int16_t)(rel / 3 ? rel / 3 : -1);
+      if (p != lead_target) {
+        v.comet = (int16_t)(rel / 3); /* a slide in flight */
+      }
+      keep = v;
+    } else if (saved.mode == MODE_CHORD && n) {
+      if (n == 1) {
+        v.center = C_NOTE, v.note = (int16_t)notes[0];
+        int rel = ((notes[0] - saved.sa) % 12 + 12) % 12;
+        v.arc = (int16_t)(rel ? bead_ang(rel) : -1);
+      } else {
+        v.center = C_CHORD;
+        name_chord(notes, n, &v);
+        for (int i = 0; i < n; i++) {
+          v.chord_pcs |= (uint16_t)(1u << ((notes[i] % 12 - saved.sa + 12) % 12));
+        }
+      }
+      keep = v;
+    } else if (saved.mode == MODE_CHORD && now < note_until && keep.center >= C_NOTE) {
+      v.center = keep.center, v.note = keep.note, v.root = keep.root, v.kind = keep.kind, v.bass = keep.bass;
+      v.interval = keep.interval, v.chord_pcs = keep.chord_pcs, v.arc = keep.arc;
+    } else {
+      v.center = C_IDLE;
+      v.breath = (uint8_t)((now % 8000u) * 64u / 8000u);
+    }
+    if (tip >= 0) {
+      v.center = C_TIP, v.tip = (uint8_t)tip;
+    }
+    v.egg = egg_until != 0;
+    v.twinkle = (uint8_t)(v.egg ? (now - egg_from) / 66 : 0);
+    cur = v;
+    repaint_changes();
+  }
+  gfx_render(scene, 7200);
+
+  if (dirty && !n && now - changed_at > 3000) { /* saving stalls the sound for a moment: wait for quiet */
     settings_save(&saved, sizeof saved);
     dirty = 0;
   }
