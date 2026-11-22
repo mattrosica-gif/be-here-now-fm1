@@ -487,6 +487,7 @@ enum { TIP_TONE,
        TIP_SAVED,
        TIP_LOAD };
 static uint32_t load_avg, load_max; /* percent, over the last second */
+static uint32_t gap_max_us, gap_show; /* the longest time between two readings of the keys, for GLO */
 
 /* what the screen shows: loop() works it out, compares it with what is drawn, and repaints what differs */
 typedef struct {
@@ -749,7 +750,14 @@ static void tip_text(int tip, const char **title, const char **a, const char **b
       char *e = cat(cat(buf, "busy "), n);
       format_int(n, (int32_t)load_max);
       cat(cat(cat(cat(e, "%, peak "), n), "%"), "");
-      *title = "Sound engine", *a = buf, *b = load_max > 85 ? "near its limit" : "running freely";
+      *title = "Sound engine", *a = buf;
+      {
+        static char kb[32];
+        char m[12];
+        format_int(m, (int32_t)((gap_show + 500u) / 1000u));
+        cat(cat(cat(kb, "keys read every "), m), " ms");
+        *b = kb;
+      }
       break;
     }
     case TIP_JHALA:
@@ -1096,6 +1104,17 @@ void setup(void) {
 }
 
 void loop(void) {
+  { /* how long since the keys were last read (the screen's sending happens between passes) */
+    static uint32_t last_us, gap_at;
+    uint32_t t = micros();
+    if (last_us && t - last_us > gap_max_us) {
+      gap_max_us = t - last_us;
+    }
+    last_us = t;
+    if (millis() - gap_at >= 1000) {
+      gap_at = millis(), gap_show = gap_max_us, gap_max_us = 0;
+    }
+  }
   static uint8_t held[KEY_COUNT];
   static uint32_t changed_at, tip_until, note_until, last_frame;
   static int dirty, ui, tip = -1, knob_on = -1;
@@ -1371,7 +1390,8 @@ void loop(void) {
     cur = v;
     repaint_changes();
   }
-  gfx_render(scene, 7200);
+  /* short screen steps: the keys are read between them, so a pass must never keep a note waiting */
+  gfx_render(scene, 2400);
 #if defined(__wasm__)
   { /* the emulator reports what the screen costs: rows the FM-1 would send each second */
     extern uint32_t gfx_rows_sent, gfx_px_drawn;
