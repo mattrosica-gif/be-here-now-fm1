@@ -18,6 +18,7 @@ jobs:
       - uses: actions/checkout@v4
       - run: ./fm1 build
       - name: where it crashed (symbols around reported addresses)
+        continue-on-error: true
         run: |
           ls build/fm1 | head -20
           D=build/fm1/firmware.dis
@@ -25,7 +26,7 @@ jobs:
           wc -l build/syms.txt
           for a in 0200464c 02004b30 02004630; do echo "== $a"; awk -v A=$a '$1 <= A' build/syms.txt | tail -2; done
           grep -n -E '^ *0?200464c:' $D | head -3
-          L=$(grep -n -E '^ *0?200464c:' $D | head -1 | cut -d: -f1); [ -n "$L" ] && sed -n "$((L-40)),$((L+8))p" $D
+          L=$(grep -n -E '^ *0?200464c:' $D | head -1 | cut -d: -f1); [ -n "$L" ] && sed -n "$((L-40)),$((L+8))p" $D || true
       - uses: actions/upload-artifact@v4
         with:
           name: be-here-now-fwsc
