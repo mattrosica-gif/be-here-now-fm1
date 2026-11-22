@@ -1,4 +1,4 @@
-# TARAF
+# BE HERE NOW
 
 A sarod-inspired firmware for the M-VAVE FM-1 that teaches you what you play. Built on [foma](https://github.com/konsumer/foma) (GPL-3.0).
 
@@ -21,6 +21,21 @@ The sound: Karplus-Strong strings (a burst of noise in a delay line, filtered a 
 The main string feeds 11 more strings tuned to the thaat: they only ring when you play a note (or a
 harmonic) they share, as a sarod's taraf strings do.
 
+```
+
+## The Coach
+
+[coach.html](https://mattrosica-gif.github.io/be-here-now-fm1/coach.html) runs in Chrome next to the FM-1 (plugged
+in by USB): a guided course in Western and Indian music side by side, nine units from the tonic to a first raga
+and taal. It hears what you play, names every note in both languages, lights the scale on a mala, a piano and a
+guitar neck, and sets up the FM-1 for each step over MIDI control changes (needs firmware 0.8):
+
+```
+  CC 20  Sa (0..11)              CC 25 / 26  notes that blink on the keys (what the lesson wants next)
+  CC 21  thaat (0..9)            CC 27 / 28  notes lit steadily (the scale), pitch-class masks from C
+  CC 22  drone (>= 64 on)        CC 29       >= 64 keeps the Coach's lights on (sent every 2 s)
+  CC 23  mode (>= 64 Chord)
+  CC 24  Learn mode (>= 64 on)
 ```
 
 Push to GitHub and set Settings → Pages → Source: GitHub Actions; every push builds the emulator and the FM-1 package. A tag (v0.1) makes a release with the .fwsc. Pick your own `identity` in firmware.json before sharing (FM-1_86 is a placeholder).

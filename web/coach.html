@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BE HERE NOW Coach</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Mukta:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE: a patient teacher beside you at dusk; plain words, one idea at a time
+   IDEA: the FM-1's own mala, grown large, with a piano and a guitar neck under it: every note in both languages
+   PICTURE: the mala (12 beads, Sa at the top), lit by what you play, beside the teacher's card
+   COLOUR and TYPE: lapis night, ivory beads, marigold for what you play, rose for what the lesson wants; Mukta
+   LAYOUT: lessons at the left, the teacher's card, then the instruments; stacks on narrow screens */
+:root {
+  color-scheme: dark;
+  --night: #0f1233; --lapis: #1b1f55; --panel: #22276a; --line: #343a8a;
+  --ivory: #f4ecd8; --mist: #a3a6d4; --dim: #6d71ad;
+  --marigold: #f5a623; --rose: #ec8da3; --ink: #1d2152; --good: #8fd6a8;
+}
+* { box-sizing: border-box; min-width: 0; }
+html, body { margin: 0; }
+html { background: var(--night); }
+body {
+  background: radial-gradient(1200px 700px at 62% 18%, #2b3080 0%, var(--lapis) 45%, var(--night) 100%) fixed;
+  color: var(--ivory); font: 17px/1.55 Mukta, system-ui, sans-serif; min-height: 100vh;
+}
+button { font: inherit; cursor: pointer; }
+:focus-visible { outline: 2px solid var(--marigold); outline-offset: 2px; }
+
+header { display: flex; align-items: center; gap: 16px; padding: 14px 24px; border-bottom: 1px solid #ffffff14; }
+.brand { display: flex; align-items: center; gap: 12px; }
+.brand h1 { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: .01em; }
+.brand span { color: var(--mist); font-size: 15px; }
+.conn { margin-left: auto; display: flex; align-items: center; gap: 10px; font-size: 15px; color: var(--mist); }
+.dot { width: 10px; height: 10px; border-radius: 50%; background: var(--dim); }
+.dot.on { background: var(--marigold); box-shadow: 0 0 10px var(--marigold); }
+.btn { border: 1px solid var(--line); background: var(--panel); color: var(--ivory); padding: 8px 16px; border-radius: 10px; min-height: 40px; }
+.btn:hover { border-color: var(--mist); }
+.btn.primary { background: var(--marigold); color: var(--ink); border-color: var(--marigold); font-weight: 600; }
+.btn.primary:disabled { background: #6b5a3a; border-color: #6b5a3a; color: #2a2a40; cursor: default; }
+.btn.ghost { background: transparent; }
+
+.wrap { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 0; min-height: calc(100vh - 70px); }
+nav { border-right: 1px solid #ffffff14; padding: 18px 12px; }
+nav h2 { font-size: 13px; color: var(--mist); font-weight: 500; margin: 4px 12px 10px; }
+.unit { display: flex; gap: 10px; align-items: center; width: 100%; text-align: left; background: none; border: 0; color: var(--ivory);
+  padding: 9px 12px; border-radius: 10px; }
+.unit:hover { background: #ffffff0d; }
+.unit.cur { background: var(--panel); }
+.unit .n { flex: none; width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid var(--line); display: grid; place-items: center;
+  font-size: 13px; color: var(--mist); }
+.unit.done .n { background: var(--marigold); border-color: var(--marigold); color: var(--ink); font-weight: 700; }
+.unit .t { line-height: 1.25; }
+.unit .t small { display: block; color: var(--mist); font-size: 13px; }
+
+main { padding: 22px 28px 40px; display: grid; gap: 22px; align-content: start; }
+.stage { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(300px, .85fr); gap: 22px; align-items: start; }
+.card { background: linear-gradient(180deg, #262c78 0%, #1f2466 100%); border: 1px solid #ffffff14; border-radius: 18px; padding: 24px 26px; }
+.where { color: var(--mist); font-size: 14px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.pips { display: flex; gap: 6px; }
+.pip { width: 18px; height: 5px; border-radius: 3px; background: var(--line); }
+.pip.done { background: var(--marigold); }
+.pip.cur { background: var(--ivory); }
+.say { font-size: 21px; line-height: 1.5; margin: 14px 0 0; max-width: 62ch; }
+.say b { color: var(--marigold); font-weight: 600; }
+.doit { margin-top: 18px; padding: 14px 16px; border-radius: 12px; background: #11143d; border: 1px solid var(--line); display: none; }
+.doit.show { display: block; }
+.doit .lab { font-size: 13px; color: var(--marigold); font-weight: 600; }
+.doit .what { font-size: 19px; margin-top: 2px; }
+.progress { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.chip { font-size: 15px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--mist); }
+.chip.ok { background: var(--marigold); border-color: var(--marigold); color: var(--ink); font-weight: 600; }
+.feedback { min-height: 30px; margin-top: 14px; font-size: 18px; }
+.feedback.good { color: var(--good); }
+.feedback.near { color: var(--rose); }
+.quiz { display: none; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+.quiz.show { display: flex; }
+.quiz .btn { min-width: 110px; font-size: 18px; }
+.quiz .btn.right { background: var(--good); color: var(--ink); border-color: var(--good); }
+.quiz .btn.wrong { border-color: var(--rose); color: var(--rose); }
+.nav { display: flex; gap: 10px; margin-top: 22px; align-items: center; flex-wrap: wrap; }
+.nav .spacer { flex: 1; }
+
+.names { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.name { background: #161a4c; border: 1px solid #ffffff12; border-radius: 16px; padding: 16px 18px; min-height: 168px; }
+.name h3 { margin: 0; font-size: 13px; color: var(--mist); font-weight: 500; }
+.name .big { font-size: 56px; line-height: 1.05; font-weight: 500; margin-top: 6px; }
+.name .big .oct { font-size: 22px; color: var(--mist); vertical-align: super; margin-left: 2px; }
+.name .big.dev { color: var(--marigold); }
+.name .sub { font-size: 17px; margin-top: 4px; }
+.name .sub2 { font-size: 15px; color: var(--mist); }
+.komal { text-decoration: underline; text-decoration-thickness: 3px; text-underline-offset: 8px; }
+.tivra { position: relative; }
+.tivra { display: inline-block; }
+.tivra::before { content: ''; position: absolute; left: 50%; top: -.17em; width: .05em; height: .22em; transform: translateX(-50%); background: currentColor; border-radius: 2px; }
+.pair { display: grid; gap: 14px; }
+
+.viewbar { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
+.viewbar label { color: var(--mist); font-size: 15px; display: flex; gap: 8px; align-items: center; }
+select { font: inherit; background: var(--panel); color: var(--ivory); border: 1px solid var(--line); border-radius: 10px; padding: 6px 10px; min-height: 40px; }
+.seg { display: flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.seg button { background: transparent; color: var(--mist); border: 0; padding: 7px 13px; min-height: 40px; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button.on { background: var(--panel); color: var(--ivory); }
+.scaleText { font-size: 18px; flex-basis: 100%; margin: 2px 0 0; max-width: 80ch; }
+.scaleText b { color: var(--marigold); font-weight: 600; }
+.instruments { display: grid; grid-template-columns: 290px minmax(0, 1fr); gap: 22px; align-items: center; }
+.mala svg { width: 100%; height: auto; display: block; }
+.keys { display: grid; gap: 16px; }
+.fig h4 { margin: 0 0 6px; font-size: 13px; color: var(--mist); font-weight: 500; }
+.fig svg { width: 100%; height: auto; display: block; }
+.legend { display: flex; gap: 16px; font-size: 14px; color: var(--mist); flex-wrap: wrap; margin-top: 4px; }
+.legend i { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+.hint { font-size: 14px; color: var(--mist); }
+
+@media (max-width: 1100px) { .stage { grid-template-columns: 1fr; } }
+@media (max-width: 860px) {
+  .wrap { grid-template-columns: 1fr; }
+  header { flex-wrap: wrap; padding: 12px 16px; }
+  .brand span { display: none; }
+  nav { border-right: 0; border-bottom: 1px solid #ffffff14; padding: 8px; }
+  #units { display: flex; overflow-x: auto; gap: 4px; }
+  nav h2 { display: none; }
+  .unit { flex: none; width: auto; }
+  .unit .t small { display: none; }
+  .fig { overflow-x: auto; }
+  .fig svg { min-width: 640px; }
+  .instruments { grid-template-columns: 1fr; }
+  .mala { max-width: 320px; margin: 0 auto; }
+  main { padding: 16px; }
+  .say { font-size: 19px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><g transform="translate(17 25)">
+      <path d="M0 0 C-4 -6 -4 -14 0 -20 C4 -14 4 -6 0 0Z" fill="#ffd9e0"/>
+      <path d="M0 0 C-6 -3 -11 -9 -12 -15 C-6 -13 -2 -8 0 0Z" fill="#e27a98"/>
+      <path d="M0 0 C6 -3 11 -9 12 -15 C6 -13 2 -8 0 0Z" fill="#e27a98"/>
+      <path d="M-15 2 H15" stroke="#f5a623" stroke-width="1.6" stroke-linecap="round"/></g></svg>
+    <h1>BE HERE NOW Coach</h1><span>Western and Indian music, one note at a time</span>
+  </div>
+  <div class="conn"><a class="btn ghost" href="./#install" style="text-decoration:none">Install firmware</a><span class="dot" id="dot"></span><span id="connText">FM-1 not connected</span>
+    <button class="btn" id="connect">Connect FM-1</button></div>
+</header>
+<div class="wrap">
+  <nav aria-label="Units"><h2>Your path</h2><div id="units"></div></nav>
+  <main>
+    <section class="stage">
+      <article class="card" aria-live="polite">
+        <div class="where"><span id="unitName"></span><div class="pips" id="pips"></div></div>
+        <p class="say" id="say"></p>
+        <div class="doit" id="doit"><div class="lab">On your FM-1</div><div class="what" id="what"></div>
+          <div class="progress" id="progress"></div></div>
+        <div class="quiz" id="quiz"></div>
+        <div class="feedback" id="feedback"></div>
+        <div class="nav">
+          <button class="btn ghost" id="back">Back</button>
+          <button class="btn" id="demo" hidden>Play it for me</button>
+          <span class="spacer"></span>
+          <button class="btn primary" id="next">Next</button>
+        </div>
+      </article>
+      <div class="pair">
+        <div class="names">
+          <section class="name" aria-label="Western name"><h3>Western</h3>
+            <div class="big" id="wBig">&nbsp;</div><div class="sub" id="wSub">play a note</div><div class="sub2" id="wSub2">&nbsp;</div></section>
+          <section class="name" aria-label="Indian name"><h3>Indian</h3>
+            <div class="big dev" id="iBig">&nbsp;</div><div class="sub" id="iSub">play a note</div><div class="sub2" id="iSub2">&nbsp;</div></section>
+        </div>
+        <p class="hint" id="hint">Every note you play shows up here in both languages, and below on the mala, the piano and the guitar.</p>
+      </div>
+    </section>
+    <section aria-label="The scale on three instruments">
+      <div class="viewbar">
+        <label for="scaleSel">Scale lit up</label><select id="scaleSel"></select>
+        <div class="seg" role="group" aria-label="Names on the keys">
+          <button data-l="names" class="on">C and Sa</button><button data-l="degrees">1 2 3</button><button data-l="solfege">do re mi</button>
+        </div>
+        <button class="btn" id="hearScale">Hear this scale</button>
+        <p class="scaleText" id="scaleText"></p>
+      </div>
+      <div class="instruments">
+        <div class="mala"><svg id="mala" viewBox="0 0 300 300" role="img" aria-label="The mala of twelve notes, Sa at the top"></svg></div>
+        <div class="keys">
+          <div class="fig"><h4>Piano</h4><svg id="piano" role="img" aria-label="Piano keyboard with the scale lit up"></svg></div>
+          <div class="fig"><h4>Guitar (standard tuning, high E string at the top, like a chord chart)</h4><svg id="guitar" role="img" aria-label="Guitar fretboard with the scale lit up"></svg></div>
+          <div class="legend">
+            <span><i style="background:#f4ecd8"></i>in the scale</span>
+            <span><i style="background:#6f739c"></i>not in the scale</span>
+            <span><i style="background:#f4ecd8;box-shadow:inset 0 -4px 0 #f5a623"></i>home (Sa)</span>
+            <span><i style="background:var(--marigold)"></i>what you play</span>
+            <span><i style="background:#f6c46e"></i>played in this step</span>
+            <span><i style="background:none;border:2px solid var(--rose)"></i>what the lesson wants next</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+<script>
+{
+// ------------------------------------------------------------------ music names (Sa is C throughout)
+const LETTER = ['C', 'D♭', 'D', 'E♭', 'E', 'F', 'F♯', 'G', 'A♭', 'A', 'B♭', 'B'];
+const LETTER_ALT = ['', 'C♯', '', 'D♯', '', '', 'G♭', '', 'G♯', '', 'A♯', ''];
+const SOLFEGE = ['do', 'ra', 're', 'me', 'mi', 'fa', 'fi', 'sol', 'le', 'la', 'te', 'ti'];
+const DEGREE = ['1', '♭2', '2', '♭3', '3', '4', '♯4', '5', '♭6', '6', '♭7', '7'];
+const INTERVAL = ['unison (home)', 'minor 2nd', 'major 2nd', 'minor 3rd', 'major 3rd', 'perfect 4th', 'tritone', 'perfect 5th', 'minor 6th', 'major 6th', 'minor 7th', 'major 7th'];
+const SARGAM = ['Sa', 'komal Re', 'Re', 'komal Ga', 'Ga', 'Ma', 'tivra Ma', 'Pa', 'komal Dha', 'Dha', 'komal Ni', 'Ni'];
+const DEV = ['सा', 'रे', 'रे', 'ग', 'ग', 'म', 'म', 'प', 'ध', 'ध', 'नि', 'नि'];
+const MARK = [0, 1, 0, 1, 0, 0, 2, 0, 1, 0, 1, 0]; // 1 komal, 2 tivra
+// same order as the firmware, so the index is what CC 21 sends
+const THAAT = [
+  { name: 'Bilawal', mode: 'the C major scale (Ionian mode)', pcs: [0, 2, 4, 5, 7, 9, 11] },
+  { name: 'Kalyan', mode: 'C Lydian: major with a raised 4th', pcs: [0, 2, 4, 6, 7, 9, 11] },
+  { name: 'Khamaj', mode: 'C Mixolydian: major with a lowered 7th', pcs: [0, 2, 4, 5, 7, 9, 10] },
+  { name: 'Kafi', mode: 'C Dorian: minor with a raised 6th', pcs: [0, 2, 3, 5, 7, 9, 10] },
+  { name: 'Asavari', mode: 'C natural minor (Aeolian mode)', pcs: [0, 2, 3, 5, 7, 8, 10] },
+  { name: 'Bhairavi', mode: 'C Phrygian: minor with a lowered 2nd', pcs: [0, 1, 3, 5, 7, 8, 10] },
+  { name: 'Bhairav', mode: 'C double harmonic: no everyday Western name', pcs: [0, 1, 4, 5, 7, 8, 11] },
+  { name: 'Purvi', mode: 'no everyday Western name', pcs: [0, 1, 4, 6, 7, 8, 11] },
+  { name: 'Marwa', mode: 'no everyday Western name', pcs: [0, 1, 4, 6, 7, 9, 11] },
+  { name: 'Todi', mode: 'no everyday Western name', pcs: [0, 1, 3, 6, 7, 8, 11] },
+];
+const SHORT = ['Sa', 'Re', 'Re', 'Ga', 'Ga', 'Ma', 'Ma', 'Pa', 'Dha', 'Dha', 'Ni', 'Ni'];
+const CHORDS = [[[0, 4, 7], 'major'], [[0, 3, 7], 'minor'], [[0, 3, 6], 'diminished'], [[0, 4, 8], 'augmented'],
+  [[0, 4, 7, 10], '7'], [[0, 4, 7, 11], 'maj7'], [[0, 3, 7, 10], 'm7']];
+const pcOf = (m) => ((m % 12) + 12) % 12;
+const letter = (pc) => LETTER[pc] + (LETTER_ALT[pc] ? ` / ${LETTER_ALT[pc]}` : '');
+const both = (pc) => `${LETTER[pc]} (${SARGAM[pc]})`;
+const devHTML = (pc) => `<span class="${MARK[pc] === 1 ? 'komal' : MARK[pc] === 2 ? 'tivra' : ''}">${DEV[pc]}</span>`;
+
+// ------------------------------------------------------------------ the lessons
+// step kinds: say (read, then Next) · play (the Coach listens) · listen (Play it for me) · quiz
+// expect: { seq: [pcs] } in order · { any: [pcs] } one of them · { chord: [pcs] } held together · { octave: pc } two
+// different octaves · { count: n } play n notes freely
+// setup: what the Coach sets on the FM-1 when the step opens: thaat (index), drone, chord (mode)
+const C4 = 60;
+const UNITS = [
+  { title: 'Home', sub: 'Sa, the tonic', scale: -1, steps: [
+    { setup: { thaat: 0, drone: true, chord: false }, say: 'Every piece of music has a home note. Western musicians call it the <b>tonic</b>. Indian musicians call it <b>Sa</b>. Here, Sa is C, so the names line up with your piano and guitar lessons.<br><br>Listen: I have switched on the drone on your FM-1. That low hum is Sa, held the whole time.' },
+    { say: 'Let us find home.', what: 'Play any C. It is the white key just left of each pair of black keys.', expect: { any: [0] }, show: [0],
+      ok: 'That is home: <b>C</b> in Western names, <b>Sa</b> in Indian, and <b>do</b> if you sing it.' },
+    { say: 'Now the same note, somewhere else.', what: 'Play a different C, higher or lower.', expect: { octave: 0 }, show: [0],
+      ok: 'Same name, twelve keys apart: an <b>octave</b>. Both traditions treat it as the same note, just higher or lower.' },
+    { say: 'Look at the piano and the guitar below. Every C is marked. On guitar, C sits on the A string at the 3rd fret and on the B string at the 1st fret. Find them on your own guitar and piano later: same note, same home.', show: [0] },
+    { say: 'Spend a moment just playing.', what: 'Play anything you like, and keep coming back to C.', expect: { count: 8 },
+      ok: 'Notice how C feels like resting against the drone? That pull toward home is the heart of both systems.' },
+  ] },
+  { title: 'Steps', sub: 'half and whole', scale: -1, steps: [
+    { say: 'Music moves in steps. The smallest is a <b>half step</b> (a semitone): the very next key, black or white. On guitar it is one fret. On the mala it is one bead.' },
+    { say: 'Take one half step up from home.', what: 'Play C, then the black key just above it (D♭).', expect: { seq: [0, 1] }, show: [0, 1],
+      ok: 'A half step. In sargam that is Sa to <b>komal Re</b>: komal means soft, a step lowered.' },
+    { say: 'Now a bigger step.', what: 'Play C, then D.', expect: { seq: [0, 2] }, show: [0, 2],
+      ok: 'Two half steps make a <b>whole step</b>: Sa to Re, or do to re. Two frets on guitar.' },
+    { say: 'One more, and look closely at the keys.', what: 'Play E, then F. There is no black key between them.', expect: { seq: [4, 5] }, show: [4, 5],
+      ok: 'E to F is only a half step. B to C is the other one. That is why the black keys come in groups of two and three.' },
+    { quiz: 'How many half steps make one whole step?', options: [['1', false], ['2', true], ['3', false]],
+      explain: 'Two. On guitar, two frets. On the mala, two beads.' },
+  ] },
+  { title: 'The major scale', sub: 'and Bilawal thaat', steps: [
+    { setup: { thaat: 0, drone: true, chord: false }, say: 'The <b>major scale</b> is the most famous pattern in Western music. Look at the keys below: the bright ones are the scale, the dim ones are left out. In C it is all the white keys. Under the keys you can see its steps: whole, whole, half, whole, whole, whole, half. Indian music knows these exact seven notes as <b>Bilawal thaat</b>.' },
+    { say: 'Listen first. Watch the beads light up as it climbs.', what: 'Press Play it for me.', demo: [[60, 420], [62, 420], [64, 420], [65, 420], [67, 420], [69, 420], [71, 420], [72, 700]] },
+    { say: 'Now you climb it.', what: 'Play the white keys from C up to the next C.', expect: { seq: [0, 2, 4, 5, 7, 9, 11, 0] }, scale: 0,
+      ok: 'That is the major scale. Sing it: <b>do re mi fa sol la ti do</b>. Or: <b>Sa Re Ga Ma Pa Dha Ni Sa</b>.' },
+    { say: 'And back down.', what: 'Play C B A G F E D C, coming down.', expect: { seq: [0, 11, 9, 7, 5, 4, 2, 0] }, scale: 0,
+      ok: 'Going up is <b>aroha</b> in Indian music; coming down is <b>avaroha</b>. Western musicians just say ascending and descending.' },
+    { quiz: 'In C, which note is Pa (the 5th, sol)?', options: [['F', false], ['G', true], ['A', false]],
+      explain: 'G. Count up from C: C D E F <b>G</b>. Pa, sol, the 5th.' },
+  ] },
+  { title: 'Intervals', sub: 'distance from home', steps: [
+    { say: 'An <b>interval</b> is the distance between two notes. Against the drone, every note you play is an interval from home, and each one has its own feeling. The name counts scale steps; the half steps say exactly how far.' },
+    { what: 'Play G (Pa).', say: 'Start with the strongest one.', expect: { any: [7] }, show: [7],
+      ok: 'C to G is a <b>perfect 5th</b>: 7 half steps, 7 frets on guitar. It is the most stable sound after home, which is why the tanpura and the power chord both use it.' },
+    { what: 'Play E (Ga).', say: 'Now a sweeter one.', expect: { any: [4] }, show: [4],
+      ok: 'A <b>major 3rd</b>: 4 half steps. Bright and sweet.' },
+    { what: 'Play E♭, the black key just below E.', say: 'Now lower it by one half step.', expect: { any: [3] }, show: [3],
+      ok: 'A <b>minor 3rd</b>: 3 half steps. Softer, a little sad. In sargam it is <b>komal Ga</b>.' },
+    { what: 'Play F (Ma).', say: 'One that leans.', expect: { any: [5] }, show: [5],
+      ok: 'A <b>perfect 4th</b>: 5 half steps. It leans, as if it wants to move somewhere.' },
+    { quiz: 'How many half steps is a perfect 5th?', options: [['5', false], ['7', true], ['4', false]],
+      explain: 'Seven: C C♯ D E♭ E F F♯ <b>G</b>. Seven frets up on guitar.' },
+  ] },
+  { title: 'Major and minor', sub: 'one note changes everything', steps: [
+    { setup: { thaat: 0, drone: true, chord: true }, say: 'Change just one note and the mood flips. I have put the FM-1 in <b>Chord mode</b>, so it plays every note you hold and names the chord.' },
+    { say: 'Build a major chord.', what: 'Hold C, E and G together.', expect: { chord: [0, 4, 7] }, show: [0, 4, 7],
+      ok: '<b>C major</b>: the root, a major 3rd and a 5th. On the mala it draws a triangle.' },
+    { say: 'Now move one note.', what: 'Hold C, E♭ and G together.', expect: { chord: [0, 3, 7] }, show: [0, 3, 7],
+      ok: '<b>C minor</b>. Only the 3rd moved, from Ga to komal Ga, and the whole colour changed. The triangle flipped too.' },
+    { say: 'In Western music, chords like these move one after another, and that movement is <b>harmony</b>. Indian classical music keeps one drone instead and lets the melody do all the moving. Same notes, two very different ideas of what music is for.' },
+  ] },
+  { title: 'Chords that move', sub: 'I, IV, V and vi', steps: [
+    { setup: { thaat: 0, drone: false, chord: true }, say: 'In the key of C, you can build a chord on every note of the scale, using only the scale’s notes. Musicians number them with Roman numerals. The big three are <b>I, IV and V</b>: C, F and G. I turned the drone off, since chords bring their own movement.' },
+    { what: 'Hold C, E, G: the I chord.', say: 'I is home.', expect: { chord: [0, 4, 7] }, show: [0, 4, 7], ok: 'I: home base.' },
+    { what: 'Hold F, A, C: the IV chord.', say: 'IV steps away.', expect: { chord: [5, 9, 0] }, show: [5, 9, 0], ok: 'IV: it moves away from home, but calmly.' },
+    { what: 'Hold G, B, D: the V chord.', say: 'V wants to come back.', expect: { chord: [7, 11, 2] }, show: [7, 11, 2],
+      ok: 'V: tension that wants to resolve. Play C, E, G again and feel it land.' },
+    { what: 'Hold A, C, E: the vi chord.', say: 'And the sad relative.', expect: { chord: [9, 0, 4] }, show: [9, 0, 4],
+      ok: 'vi: A minor, home’s sad relative. C, G, Am, F (I, V, vi, IV) is behind hundreds of songs, and it is all open chords on guitar.' },
+    { say: 'On guitar you already know these shapes: C, G, Am and F (or Fmaj7). The numbers are what let musicians change key: I, V, vi, IV is the same song in any key. Indian music does not do this; the drone keeps one home all the way through.' },
+  ] },
+  { title: 'Modes and thaats', sub: 'same home, new colours', steps: [
+    { setup: { thaat: 0, drone: true, chord: false }, say: 'Keep C as home and change one note, and you get a new colour. Western music calls these <b>modes</b>. Indian music calls the parent scales <b>thaats</b>. Many are the same seven notes with two names.' },
+    { setup: { thaat: 1, drone: true, chord: false }, say: 'I switched the FM-1 to Kalyan thaat. Listen to one changed note over the drone.', what: 'Play F♯ against the drone.', expect: { any: [6] }, show: [6], scale: 1,
+      ok: 'That raised 4th is <b>tivra Ma</b>. With it, the major scale becomes <b>Kalyan thaat</b>, the <b>Lydian mode</b>. Dreamy, floating.' },
+    { setup: { thaat: 3, drone: true, chord: false }, say: 'Now Kafi thaat.', what: 'Play E♭, then B♭.', expect: { seq: [3, 10] }, show: [3, 10], scale: 3,
+      ok: 'Lower Ga and Ni and you get <b>Kafi thaat</b>, the <b>Dorian mode</b>. Earthy, a little bluesy.' },
+    { setup: { thaat: 5, drone: true, chord: false }, say: 'And one more.', what: 'Play D♭, right next to home.', expect: { any: [1] }, show: [1], scale: 5,
+      ok: '<b>Komal Re</b>, a half step above Sa: <b>Bhairavi thaat</b>, the <b>Phrygian mode</b>. Intense, devotional.' },
+    { quiz: 'Kalyan thaat is the same seven notes as which mode?', options: [['Lydian', true], ['Dorian', false], ['Phrygian', false]],
+      explain: 'Lydian: the major scale with a raised 4th (tivra Ma).' },
+  ] },
+  { title: 'A first raga', sub: 'Yaman', steps: [
+    { setup: { thaat: 1, drone: true, chord: false }, say: 'A <b>raga</b> is more than a scale. It has rules for going up and coming down, favourite notes, signature phrases and a mood. <b>Yaman</b> uses Kalyan’s notes and is often the first raga students learn.' },
+    { say: 'Here is its signature phrase, the <b>pakad</b>.', what: 'Press Play it for me and listen.', scale: 1,
+      demo: [[59, 520], [62, 520], [64, 700], [62, 520], [60, 900], [67, 520], [66, 520], [64, 700], [62, 520], [60, 1000]] },
+    { say: 'Now you play it back, slowly.', what: 'B D E D C, then G F♯ E D C.', expect: { seq: [11, 2, 4, 2, 0, 7, 6, 4, 2, 0] }, scale: 1,
+      ok: 'That is Yaman’s pakad: <b>Ni Re Ga Re Sa, Pa Ma Ga Re Sa</b>.' },
+    { say: 'Yaman leans on two notes: <b>Ga</b>, its king note (vadi), and <b>Ni</b>, its queen (samvadi). Western music has no exact word for this, but think of them as the notes a melody keeps returning to. For seven more ragas, use Learn mode on the FM-1: press SEQ, then PLAY.' },
+  ] },
+  { title: 'Rhythm', sub: 'beats, bars and taal', steps: [
+    { setup: { drone: false, chord: false }, say: 'Western music counts time in <b>bars</b> of beats: 4/4 means four beats in each bar. Indian music counts in cycles called <b>taals</b>, and the first beat, <b>sam</b>, is where everything comes home.' },
+    { say: '<b>Keherwa</b> taal has 8 beats and feels like two bars of 4/4. <b>Dadra</b> has 6 and feels like 6/8. <b>Teentaal</b> has 16: four groups of four.' },
+    { say: 'Let us hear one on the FM-1’s tabla.', what: 'Press SEQ, turn PRESETS to Taal, turn SELECT to Keherwa, then press PLAY. Count along: 1 2 3 4, 1 2 3 4.' },
+    { say: 'Play with the cycle.', what: 'Play C each time the marigold dot reaches the top (sam).', expect: { count: 6 },
+      ok: 'That is playing to the cycle. Sam is like the downbeat, the “one” your teacher counts in.' },
+    { say: 'You now have the foundations of both systems: home, steps, scales, intervals, chords, modes, a raga and rhythm. Come back to any unit whenever something feels vague, and keep playing. Press SEQ on the FM-1 to leave Learn mode.' },
+  ] },
+];
+
+// ------------------------------------------------------------------ state
+const $ = (id) => document.getElementById(id);
+let u = 0, s = 0, done = {}, stepDone = false, seqI = 0, octSeen = null, played = 0, quizPicked = false;
+const held = new Set();
+let lastNote = null, lastSource = 'you', labelMode = 'names', scaleOverride = null;
+const trail = new Set(); // notes played well in this step stay lit, so a scale builds up on the keys
+try { const saved = JSON.parse(localStorage.getItem('bhn-coach') || '{}'); u = saved.u || 0; s = saved.s || 0; done = saved.done || {}; } catch {}
+const save = () => { try { localStorage.setItem('bhn-coach', JSON.stringify({ u, s, done })); } catch {} };
+const step = () => UNITS[u].steps[s];
+
+// ------------------------------------------------------------------ MIDI: hear the FM-1, set it up, play to it
+let midiOut = null, midiIn = null;
+async function connect(ask) {
+  if (!navigator.requestMIDIAccess) { setConn(false, 'This browser has no MIDI: use Chrome or Edge'); return; }
+  try {
+    const access = await navigator.requestMIDIAccess();
+    const pick = (ports) => [...ports.values()].find((p) => /felucca|fm-?1|be here now|foma/i.test(p.name)) || [...ports.values()][0] || null;
+    const hook = () => {
+      if (midiIn) midiIn.onmidimessage = null;
+      midiIn = pick(access.inputs); midiOut = pick(access.outputs);
+      if (midiIn) midiIn.onmidimessage = onMidi;
+      setConn(!!midiIn, midiIn ? 'FM-1 connected' : 'Plug in the FM-1 by USB');
+      if (midiOut) { cc(20, 0); applySetup(true); sentLights = ''; sendLights(); }
+    };
+    access.onstatechange = hook;
+    hook();
+  } catch (e) {
+    setConn(false, ask ? 'Allow MIDI to connect the FM-1' : 'FM-1 not connected');
+  }
+}
+function setConn(on, text) { $('dot').classList.toggle('on', on); $('connText').textContent = text; $('connect').hidden = on; }
+const cc = (n, v) => midiOut && midiOut.send([0xb0, n, v]);
+function onMidi(e) {
+  const [st, d1, d2] = e.data;
+  if ((st & 0xf0) === 0x90 && d2 > 0) noteOn(d1, 'you');
+  else if ((st & 0xf0) === 0x80 || ((st & 0xf0) === 0x90 && d2 === 0)) noteOff(d1);
+}
+function applySetup(full) {
+  // a step with its own setup sends it; a jump (a unit picked, Back, a fresh connection) sends the whole
+  // setup so far, so the FM-1 always matches the lesson. Steps without one leave the FM-1 alone, so Learn mode
+  // stays on when a lesson asks you to use it
+  const own = step().setup;
+  if (!midiOut || (!own && !full)) return;
+  let cfg = {};
+  for (let i = 0; i <= s; i++) Object.assign(cfg, UNITS[u].steps[i].setup || {});
+  if (own) cc(24, 0);
+  if (cfg.thaat !== undefined) cc(21, cfg.thaat);
+  if (cfg.drone !== undefined) cc(22, cfg.drone ? 127 : 0);
+  if (cfg.chord !== undefined) cc(23, cfg.chord ? 127 : 0);
+}
+
+// ------------------------------------------------------------------ a little sound for the on-screen piano and demos without an FM-1
+let actx = null;
+function pluck(m) {
+  try {
+    actx = actx || new AudioContext();
+    const t = actx.currentTime, f = 440 * 2 ** ((m - 69) / 12), g = actx.createGain();
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.25, t + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.6);
+    g.connect(actx.destination);
+    for (const [h, a] of [[1, 1], [2, 0.5], [3, 0.25], [4, 0.12]]) {
+      const o = actx.createOscillator(), og = actx.createGain();
+      o.frequency.value = f * h; og.gain.value = a; o.connect(og); og.connect(g); o.start(t); o.stop(t + 1.7);
+    }
+  } catch {}
+}
+
+// ------------------------------------------------------------------ notes in
+function noteOn(m, source) {
+  lastNote = m; lastSource = source;
+  if (source !== 'fm1') held.add(m);
+  showNote(m);
+  if (source === 'demo') { drawAll(); return; }
+  judge(m);
+  drawAll();
+}
+function noteOff(m) { held.delete(m); drawAll(); }
+
+function judge(m) {
+  const st = step(), ex = st.expect, pc = pcOf(m);
+  if (!ex || stepDone) return;
+  if (ex.any) {
+    if (ex.any.includes(pc)) { trail.add(m); finish(); } else feedback(`That is ${both(pc)}. Looking for ${ex.any.map(both).join(' or ')}.`, 'near');
+  } else if (ex.seq) {
+    if (pc === ex.seq[seqI]) {
+      trail.add(m); seqI++; renderProgress();
+      if (seqI >= ex.seq.length) finish(); else feedback(`${both(pc)}, yes.`, 'good');
+    } else {
+      feedback(`That is ${both(pc)}. Next is ${both(ex.seq[seqI])}.`, 'near');
+    }
+  } else if (ex.octave !== undefined) {
+    if (pc !== ex.octave) { feedback(`That is ${both(pc)}. Looking for another ${LETTER[ex.octave]}.`, 'near'); return; }
+    if (octSeen === null) { octSeen = m; trail.add(m); feedback(`${LETTER[pc]} found. Now a different ${LETTER[pc]}.`, 'good'); }
+    else if (m !== octSeen) { trail.add(m); finish(); }
+    else feedback(`That is the same ${LETTER[pc]}. Try one higher or lower.`, 'near');
+  } else if (ex.count) {
+    played++; trail.add(m); renderProgress();
+    if (played >= ex.count) finish();
+  } else if (ex.chord) {
+    const want = new Set(ex.chord), have = new Set([...held].map(pcOf));
+    if (have.size === want.size && [...want].every((p) => have.has(p))) { held.forEach((h) => trail.add(h)); finish(); }
+    else if ([...have].some((p) => !want.has(p))) feedback(`Holding ${[...have].map((p) => LETTER[p]).join(' ')}. Looking for ${ex.chord.map((p) => LETTER[p]).join(' ')}.`, 'near');
+    else feedback(`${[...have].map((p) => LETTER[p]).join(' ')}... keep holding and add the rest.`, 'good');
+  }
+}
+function finish() {
+  stepDone = true;
+  feedback(step().ok || 'Yes.', 'good');
+  $('next').disabled = false;
+  $('next').focus({ preventScroll: true });
+}
+function feedback(html, cls) { const f = $('feedback'); f.innerHTML = html; f.className = 'feedback ' + (cls || ''); }
+
+// ------------------------------------------------------------------ the names of what you play
+function showNote(m) {
+  const pc = pcOf(m), oct = Math.floor(m / 12) - 1;
+  $('wBig').innerHTML = `${LETTER[pc]}<span class="oct">${oct}</span>`;
+  $('wSub').textContent = `${SOLFEGE[pc]}, scale degree ${DEGREE[pc]}`;
+  $('wSub2').textContent = INTERVAL[pc] + (pc ? ' above C' : '');
+  $('iBig').innerHTML = devHTML(pc);
+  $('iSub').textContent = SARGAM[pc];
+  const th = currentScale();
+  $('iSub2').textContent = th < 0 ? (MARK[pc] === 1 ? 'komal: lowered' : MARK[pc] === 2 ? 'tivra: raised' : 'shuddha: natural')
+    : THAAT[th].pcs.includes(pc) ? `in ${THAAT[th].name} thaat` : `not in ${THAAT[th].name} thaat`;
+  const pcs = [...new Set([...held].map(pcOf))];
+  if (pcs.length >= 2) {
+    for (const root of pcs) {
+      const rel = pcs.map((p) => (p - root + 12) % 12).sort((a, b) => a - b);
+      const c = CHORDS.find(([sh]) => sh.length === rel.length && sh.every((v, i) => v === rel[i]));
+      if (c) {
+        $('wSub2').textContent = `chord: ${LETTER[root]} ${c[1]}`;
+        $('iSub2').textContent = `notes held: ${c[0].map((v) => SHORT[(v + root) % 12]).join(' ')}`;
+        break;
+      }
+    }
+  }
+}
+function lessonScale() {
+  let sc = UNITS[u].scale !== undefined ? UNITS[u].scale : 0;
+  for (let i = 0; i <= s; i++) {
+    const st = UNITS[u].steps[i];
+    if (st.setup && st.setup.thaat !== undefined) sc = st.setup.thaat;
+    if (st.scale !== undefined) sc = st.scale;
+  }
+  return sc;
+}
+const currentScale = () => (scaleOverride !== null ? scaleOverride : lessonScale());
+const scalePcs = () => { const sc = currentScale(); return sc < 0 ? null : THAAT[sc].pcs; };
+
+// ------------------------------------------------------------------ drawing: mala, piano, guitar
+// One colour language on all three: ivory = in the scale, dim = left out, marigold = what you play,
+// light marigold = played in this step, rose ring = what the lesson wants, a marigold bar or ring = home (Sa)
+const SVGNS = 'http://www.w3.org/2000/svg';
+const el = (name, attrs, parent) => { const e = document.createElementNS(SVGNS, name); for (const k in attrs) e.setAttribute(k, attrs[k]); parent && parent.appendChild(e); return e; };
+const txt = (parent, x, y, str, attrs) => { const t = el('text', Object.assign({ x, y, 'text-anchor': 'middle' }, attrs), parent); t.textContent = str; return t; };
+function wantPcs() { const st = step(); if (stepDone && st.expect) return []; return st.show && !st.expect ? st.show : (st.expect && (st.expect.any || st.expect.chord || (st.expect.seq ? [st.expect.seq[seqI]] : st.expect.octave !== undefined ? [st.expect.octave] : null))) || st.show || []; }
+const keyLabel = (pc) => (labelMode === 'degrees' ? [DEGREE[pc]] : labelMode === 'solfege' ? [SOLFEGE[pc]] : [LETTER[pc], SHORT[pc]]);
+const isPlaying = (m) => held.has(m) || m === lastNote;
+// the komal underline and tivra tick under a sargam label, as on the FM-1's screen
+function sargamMark(svg, pc, x, y, color) {
+  if (labelMode !== 'names') return;
+  if (MARK[pc] === 1) el('line', { x1: x - 8, y1: y + 3, x2: x + 8, y2: y + 3, stroke: color, 'stroke-width': 1.6 }, svg);
+  if (MARK[pc] === 2) el('line', { x1: x, y1: y - 13, x2: x, y2: y - 9, stroke: color, 'stroke-width': 1.6 }, svg);
+}
+
+function drawMala() {
+  const svg = $('mala'); svg.innerHTML = '';
+  const cx = 150, cy = 150, R = 108, scale = scalePcs(), want = wantPcs();
+  const heldPcs = new Set([...held].map(pcOf)), last = lastNote !== null ? pcOf(lastNote) : -1, trailPcs = new Set([...trail].map(pcOf));
+  el('circle', { cx, cy, r: R, fill: 'none', stroke: '#3d4290', 'stroke-width': 2 }, svg);
+  const glow = el('radialGradient', { id: 'g' }, el('defs', {}, svg));
+  el('stop', { offset: '0', 'stop-color': '#f5a623', 'stop-opacity': 0.75 }, glow); el('stop', { offset: '1', 'stop-color': '#f5a623', 'stop-opacity': 0 }, glow);
+  const at = (p, r) => [cx + r * Math.sin(p * Math.PI / 6), cy - r * Math.cos(p * Math.PI / 6)];
+  // the scale's shape: a faint thread through its beads
+  if (scale) el('polygon', { points: scale.map((p) => at(p, R).join(',')).join(' '), fill: '#f4ecd80a', stroke: '#f4ecd830', 'stroke-width': 1.5 }, svg);
+  const hp = [...heldPcs].sort((a, b) => a - b);
+  if (hp.length >= 2) el('polygon', { points: hp.map((p) => at(p, R).join(',')).join(' '), fill: '#f5a62318', stroke: '#f5a623', 'stroke-width': 2.5, 'stroke-linejoin': 'round' }, svg);
+  for (let p = 0; p < 12; p++) {
+    const [x, y] = at(p, R), [lx, ly] = at(p, R + 30);
+    const lit = heldPcs.has(p) || p === last, inS = !scale || scale.includes(p), tr = trailPcs.has(p);
+    if (lit) el('circle', { cx: x, cy: y, r: 34, fill: 'url(#g)' }, svg);
+    if (want.includes(p)) el('circle', { cx: x, cy: y, r: 24, fill: 'none', stroke: '#ec8da3', 'stroke-width': 3 }, svg);
+    const fill = lit ? '#f5a623' : tr ? '#f6c46e' : inS ? '#f4ecd8' : '#1d2152';
+    el('circle', { cx: x, cy: y, r: 18, fill, stroke: p === 0 && !lit ? '#f5a623' : inS ? 'none' : '#3d4290', 'stroke-width': p === 0 ? 3.5 : 1.5 }, svg);
+    const ink = lit || tr || inS ? '#1d2152' : '#8a8dc4';
+    txt(svg, x, y + 7, DEV[p], { 'font-size': 19, 'font-weight': 600, fill: ink });
+    if (MARK[p] === 1) el('line', { x1: x - 7, y1: y + 12, x2: x + 7, y2: y + 12, stroke: ink, 'stroke-width': 2 }, svg);
+    if (MARK[p] === 2) el('line', { x1: x, y1: y - 15, x2: x, y2: y - 9, stroke: ink, 'stroke-width': 2 }, svg);
+    txt(svg, lx, ly + 5, keyLabel(p)[0], { 'font-size': 14, fill: lit ? '#f4ecd8' : inS ? '#c9cbe8' : '#6d71ad' });
+  }
+  txt(svg, cx, cy + 8, last >= 0 ? `${LETTER[last]} = ${SARGAM[last]}` : 'Sa = C', { 'font-size': 22, 'font-weight': 600, fill: '#f4ecd8' });
+}
+
+const PIANO_LO = 48, PIANO_HI = 84; // C3 .. C6
+const BLACK = [1, 3, 6, 8, 10], isBlack = (m) => BLACK.includes(pcOf(m));
+function drawPiano() {
+  const svg = $('piano'), W = 30, H = 136, BH = 86, whites = [], xOf = {};
+  for (let m = PIANO_LO; m <= PIANO_HI; m++) if (!isBlack(m)) whites.push(m);
+  whites.forEach((m, i) => { xOf[m] = i * W + W / 2 + 1; });
+  for (let m = PIANO_LO; m <= PIANO_HI; m++) if (isBlack(m)) xOf[m] = xOf[m - 1] + W / 2;
+  const scale = scalePcs(), want = wantPcs(), width = whites.length * W, strip = scale ? 40 : 6;
+  svg.setAttribute('viewBox', `0 0 ${width + 2} ${H + strip}`); svg.innerHTML = '';
+  const inS = (m) => !scale || scale.includes(pcOf(m));
+  const draw = (m, black) => {
+    const pc = pcOf(m), w = black ? W * 0.64 : W - 2, h = black ? BH : H, x = black ? xOf[m] - w / 2 : xOf[m] - w / 2;
+    const play = isPlaying(m), tr = trail.has(m), sc = inS(m);
+    const fill = play ? '#f5a623' : tr ? '#f6c46e' : black ? (sc && scale ? '#5d64c4' : '#14173a') : sc ? '#f4ecd8' : '#6f739c';
+    const r = el('rect', { x, y: 1, width: w, height: h, rx: black ? 3 : 4, fill, stroke: black ? '#0b0d26' : '#0f1233', 'stroke-width': 1, 'data-m': m }, svg);
+    r.style.cursor = 'pointer';
+    if (pc === 0) el('rect', { x: x + 3, y: h - 6, width: w - 6, height: 4, rx: 2, fill: play ? '#1d2152' : '#f5a623', 'pointer-events': 'none' }, svg);
+    if (want.includes(pc)) el('rect', { x: x + 3, y: h - (black ? 40 : 52), width: w - 6, height: black ? 32 : 42, rx: 6, fill: 'none', stroke: '#ec8da3', 'stroke-width': 3, 'pointer-events': 'none' }, svg);
+    // names only on the scale's keys (and on anything you play), so the scale reads at a glance
+    if (sc || play || tr || want.includes(pc)) {
+      const lab = keyLabel(pc), ink = play || tr || !black ? '#1d2152' : '#f4ecd8';
+      const y1 = black ? BH - (lab.length > 1 ? 26 : 14) : H - (lab.length > 1 ? 32 : 18), fs = black ? 10 : 12;
+      lab.forEach((t, i) => {
+        const tt = txt(svg, xOf[m], y1 + i * (fs + 3), t, { 'font-size': fs, 'font-weight': i === 0 ? 600 : 500, fill: ink, 'pointer-events': 'none' });
+        if (i === 1 || (labelMode === 'names' && lab.length === 1)) sargamMark(svg, pc, xOf[m], y1 + i * (fs + 3), ink);
+        return tt;
+      });
+    }
+  };
+  whites.forEach((m) => draw(m, false));
+  for (let m = PIANO_LO; m <= PIANO_HI; m++) if (isBlack(m)) draw(m, true);
+  // the scale's steps, drawn once under the middle octave: W = whole step, H = half step
+  if (scale) {
+    const base = 60, pcs = [...scale, 12];
+    for (let i = 0; i < pcs.length - 1; i++) {
+      const a = base + pcs[i], b = base + pcs[i + 1], gap = pcs[i + 1] - pcs[i], x1 = xOf[a] + 3, x2 = xOf[b] - 3, y = H + 9;
+      const col = gap === 1 ? '#ec8da3' : gap === 2 ? '#c9cbe8' : '#f5a623';
+      el('path', { d: `M${x1} ${y - 4} Q${(x1 + x2) / 2} ${y + 8} ${x2} ${y - 4}`, fill: 'none', stroke: col, 'stroke-width': 1.8 }, svg);
+      txt(svg, (x1 + x2) / 2, y + 22, gap === 1 ? 'H' : gap === 2 ? 'W' : 'W+H', { 'font-size': 13, 'font-weight': 600, fill: col });
+    }
+  }
+}
+
+const STRINGS = [64, 59, 55, 50, 45, 40]; // high E at the top of the picture, as on a chord chart
+function drawGuitar() {
+  const svg = $('guitar'), F = 12, fw = 52, sh = 22, x0 = 48, y0 = 14, w = x0 + fw * F + 12, h = y0 + sh * 5 + 30;
+  svg.setAttribute('viewBox', `0 0 ${w} ${h}`); svg.innerHTML = '';
+  const want = wantPcs(), scale = scalePcs();
+  el('rect', { x: x0, y: y0 - 8, width: fw * F, height: sh * 5 + 16, fill: '#2a1d14', rx: 4 }, svg);
+  el('rect', { x: x0 - 3, y: y0 - 8, width: 5, height: sh * 5 + 16, fill: '#efe6d0' }, svg);
+  for (let f = 1; f <= F; f++) el('line', { x1: x0 + f * fw, y1: y0 - 8, x2: x0 + f * fw, y2: y0 + sh * 5 + 8, stroke: '#8a7f6a', 'stroke-width': 1.5 }, svg);
+  for (const f of [3, 5, 7, 9]) el('circle', { cx: x0 + (f - 0.5) * fw, cy: y0 + sh * 2.5, r: 4, fill: '#5a4a38' }, svg);
+  el('circle', { cx: x0 + 11.5 * fw, cy: y0 + sh * 1.5, r: 4, fill: '#5a4a38' }, svg); el('circle', { cx: x0 + 11.5 * fw, cy: y0 + sh * 3.5, r: 4, fill: '#5a4a38' }, svg);
+  STRINGS.forEach((open, si) => {
+    const y = y0 + si * sh;
+    el('line', { x1: x0, y1: y, x2: x0 + fw * F, y2: y, stroke: '#cfc6b0', 'stroke-width': 1 + si * 0.35 }, svg);
+    txt(svg, 9, y + 5, LETTER[pcOf(open)], { 'font-size': 13, fill: '#a3a6d4' });
+  });
+  STRINGS.forEach((open, si) => {
+    const y = y0 + si * sh;
+    for (let f = 0; f <= F; f++) {
+      const m = open + f, x = f === 0 ? x0 - 19 : x0 + (f - 0.5) * fw, pc = pcOf(m);
+      const play = isPlaying(m), tr = trail.has(m), sc = scale ? scale.includes(pc) : pc === 0, target = want.includes(pc);
+      if (!(play || tr || sc || target)) continue;
+      if (target && !play) el('circle', { cx: x, cy: y, r: 11.5, fill: 'none', stroke: '#ec8da3', 'stroke-width': 2.6 }, svg);
+      const fill = play ? '#f5a623' : tr ? '#f6c46e' : sc ? '#f4ecd8' : '#2a1d14';
+      el('circle', { cx: x, cy: y, r: 9, fill, stroke: pc === 0 && !play ? '#f5a623' : 'none', 'stroke-width': 3 }, svg);
+      txt(svg, x, y + 3.5, keyLabel(pc)[0], { 'font-size': 9.5, 'font-weight': 600, fill: sc || play || tr ? '#1d2152' : '#ec8da3' });
+    }
+  });
+  for (const f of [3, 5, 7, 9, 12]) txt(svg, x0 + (f - 0.5) * fw, h - 4, f, { 'font-size': 12, fill: '#a3a6d4' });
+}
+
+function describeScale() {
+  const sc = currentScale(), p = $('scaleText');
+  if (sc < 0) { p.innerHTML = 'All twelve notes are lit: this is the <b>chromatic scale</b>, every half step. Indian music has the same twelve <b>swaras</b>: seven natural (shuddha), four lowered (komal) and one raised (tivra Ma).'; return; }
+  const t = THAAT[sc], pcs = t.pcs, steps = [...pcs, 12].slice(1).map((v, i) => v - pcs[i]).map((g) => (g === 1 ? 'H' : g === 2 ? 'W' : 'W+H'));
+  p.innerHTML = `<b>${t.name} thaat</b>, ${t.mode}. Notes: ${pcs.map((q) => LETTER[q]).join(' ')}, or ${pcs.map((q) => SARGAM[q]).join(', ')}. Steps: <span style="white-space:nowrap">${steps.join(' ')}</span>.`;
+}
+function drawAll() { drawMala(); drawPiano(); drawGuitar(); describeScale(); sendLights(); }
+
+// the FM-1's own keys light up like the screen: the scale steady, the note the lesson wants next blinking
+let sentLights = '';
+const maskOf = (pcs) => pcs.reduce((a, p) => a | (1 << p), 0);
+function sendLights() {
+  if (!midiOut) return;
+  const lit = maskOf(scalePcs() || [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]), blink = maskOf(wantPcs()), key = `${lit},${blink}`;
+  if (key === sentLights) return;
+  sentLights = key;
+  cc(27, lit & 0x7f); cc(28, lit >> 7); cc(25, blink & 0x7f); cc(26, blink >> 7); cc(29, 127);
+}
+setInterval(() => cc(29, 127), 2000);
+addEventListener('pagehide', () => cc(29, 0));
+
+// ------------------------------------------------------------------ the lesson card
+function renderUnits() {
+  const box = $('units'); box.innerHTML = '';
+  UNITS.forEach((un, i) => {
+    const b = document.createElement('button');
+    b.className = 'unit' + (i === u ? ' cur' : '') + (done[i] ? ' done' : '');
+    b.innerHTML = `<span class="n">${done[i] ? '✓' : i + 1}</span><span class="t">${un.title}<small>${un.sub}</small></span>`;
+    b.addEventListener('click', () => { u = i; s = 0; openStep(true); });
+    box.appendChild(b);
+  });
+}
+function renderProgress() {
+  const st = step(), box = $('progress'); box.innerHTML = '';
+  if (st.expect && st.expect.seq) st.expect.seq.forEach((pc, i) => {
+    const c = document.createElement('span'); c.className = 'chip' + (i < seqI ? ' ok' : ''); c.textContent = LETTER[pc]; box.appendChild(c);
+  });
+  if (st.expect && st.expect.count) { const c = document.createElement('span'); c.className = 'chip'; c.textContent = `${Math.min(played, st.expect.count)} of ${st.expect.count} notes`; box.appendChild(c); }
+}
+function openStep(full) {
+  const st = step(), un = UNITS[u];
+  stepDone = !st.expect && !st.quiz; seqI = 0; octSeen = null; played = 0; quizPicked = false;
+  trail.clear(); held.clear(); lastNote = null; scaleOverride = null; $('scaleSel').value = String(lessonScale());
+  $('unitName').textContent = `Unit ${u + 1}: ${un.title}`;
+  const pips = $('pips'); pips.innerHTML = '';
+  un.steps.forEach((_, i) => { const p = document.createElement('span'); p.className = 'pip' + (i < s ? ' done' : i === s ? ' cur' : ''); pips.appendChild(p); });
+  $('say').innerHTML = st.say || st.quiz || '';
+  $('doit').classList.toggle('show', !!st.what); $('what').textContent = st.what || '';
+  $('demo').hidden = !st.demo;
+  const q = $('quiz'); q.innerHTML = ''; q.classList.toggle('show', !!st.quiz);
+  if (st.quiz) st.options.forEach(([label, right]) => {
+    const b = document.createElement('button'); b.className = 'btn'; b.textContent = label;
+    b.addEventListener('click', () => {
+      if (stepDone) return;
+      if (right) { b.classList.add('right'); stepDone = true; feedback(st.explain, 'good'); $('next').disabled = false; }
+      else { b.classList.add('wrong'); feedback('Not that one. Try again.', 'near'); }
+    });
+    q.appendChild(b);
+  });
+  feedback(st.expect ? 'Listening to your FM-1...' : '', '');
+  if (st.demo && !st.expect) stepDone = false;
+  $('next').disabled = !stepDone;
+  $('next').textContent = s === un.steps.length - 1 ? (u === UNITS.length - 1 ? 'Finish' : 'Next unit') : 'Next';
+  $('back').disabled = u === 0 && s === 0;
+  renderProgress(); renderUnits(); applySetup(full); drawAll(); save();
+}
+// play notes on the FM-1 (or in the browser without one); each stays lit on the keys as it goes by
+let playing = false;
+async function playNotes(list) {
+  if (playing) return; playing = true; trail.clear();
+  for (const [m, ms] of list) {
+    if (midiOut) midiOut.send([0x90, m, 96]); else pluck(m);
+    trail.add(m); noteOn(m, 'demo');
+    await new Promise((r) => setTimeout(r, ms));
+    if (midiOut) midiOut.send([0x80, m, 0]);
+    held.delete(m);
+  }
+  lastNote = null; playing = false; drawAll();
+}
+async function playDemo() {
+  const st = step();
+  $('demo').disabled = true;
+  await playNotes(st.demo);
+  $('demo').disabled = false;
+  if (!st.expect) { stepDone = true; $('next').disabled = false; feedback('Now you know how it sounds.', 'good'); }
+  else feedback('Your turn now.', '');
+}
+$('hearScale').addEventListener('click', () => {
+  const pcs = scalePcs() || [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], up = [...pcs.map((p) => 60 + p), 72];
+  playNotes([...up, ...up.slice(0, -1).reverse()].map((m, i, a) => [m, i === a.length - 1 || i === up.length - 1 ? 700 : 340]));
+});
+// the scale picker: any thaat, lit on the keys and set on the FM-1 too
+THAAT.forEach((t, i) => { const o = document.createElement('option'); o.value = i; o.textContent = `${t.name}: ${t.mode.split(':')[0].replace('the C major scale (Ionian mode)', 'C major')}`; $('scaleSel').appendChild(o); });
+{ const o = document.createElement('option'); o.value = -1; o.textContent = 'All 12 notes (chromatic)'; $('scaleSel').prepend(o); }
+$('scaleSel').addEventListener('change', (e) => {
+  scaleOverride = +e.target.value;
+  if (scaleOverride >= 0) cc(21, scaleOverride);
+  drawAll();
+});
+document.querySelectorAll('.seg button').forEach((b) => b.addEventListener('click', () => {
+  labelMode = b.dataset.l;
+  document.querySelectorAll('.seg button').forEach((x) => x.classList.toggle('on', x === b));
+  try { localStorage.setItem('bhn-coach-labels', labelMode); } catch {}
+  drawAll();
+}));
+try { const l = localStorage.getItem('bhn-coach-labels'); if (l) document.querySelector(`.seg button[data-l="${l}"]`).click(); } catch {}
+
+$('next').addEventListener('click', () => {
+  if (s < UNITS[u].steps.length - 1) s++;
+  else { done[u] = true; if (u < UNITS.length - 1) { u++; s = 0; } }
+  openStep(false);
+});
+$('back').addEventListener('click', () => {
+  if (s > 0) s--; else if (u > 0) { u--; s = UNITS[u].steps.length - 1; }
+  openStep(true);
+});
+$('demo').addEventListener('click', playDemo);
+$('connect').addEventListener('click', () => connect(true));
+
+// the on-screen piano works too, for trying a step without the FM-1
+for (const id of ['piano']) {
+  $(id).addEventListener('pointerdown', (e) => {
+    const m = +(e.target.getAttribute && e.target.getAttribute('data-m'));
+    if (!m) return;
+    if (midiOut) midiOut.send([0x90, m, 96]); else pluck(m);
+    noteOn(m, 'you');
+    const up = () => { if (midiOut) midiOut.send([0x80, m, 0]); noteOff(m); window.removeEventListener('pointerup', up); };
+    window.addEventListener('pointerup', up);
+  });
+}
+
+openStep(true);
+connect(false);
+}
+</script>
+</body>
+</html>

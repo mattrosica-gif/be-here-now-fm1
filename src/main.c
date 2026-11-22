@@ -16,6 +16,13 @@
  *   SAVE        keep the settings through power-off (they are also kept on their own when all is silent)
  *   GLO         how busy the sound engine is
  *   SEQ         Learn mode: Raga studio, Find the note, Alankars, Taal (see learn.h)
+ *
+ * Over USB MIDI, notes in play, and the notes you play go out. The Coach (coach.html) sets the instrument up
+ * with control changes: CC 20 Sa (0..11), CC 21 thaat (0..9), CC 22 drone (>= 64 on), CC 23 mode (>= 64 Chord),
+ * CC 24 Learn mode (>= 64 on). The key lights follow the Coach while it is open: CC 25 / 26 the notes that blink
+ * (what the lesson wants next) and CC 27 / 28 the notes lit steadily (the scale on its screen), each a mask of
+ * pitch classes from C (25 and 27: C..F#, bit 0 = C; 26 and 28: G..B, bit 0 = G); CC 29 >= 64 keeps them on,
+ * sent every 2 s, and 3 s of silence (or CC 29 < 64, or Learn mode) gives the lights back to the FM-1.
  *   keys        play; in Sarod mode press a key while holding another to slide (meend)
  *   key lights  the notes of the thaat
  *
@@ -1395,11 +1402,16 @@ void loop(void) {
       midi_send(0x80, held[k], 0);
     }
   }
+  static uint8_t cc_n, cc_num[32], cc_val[32]; /* control changes, applied with the other controls below */
+  static uint16_t coach_blink, coach_lit;           /* the Coach's key lights, pitch classes from C */
+  static uint32_t coach_until;
   while (midi_read(&st, &d1, &d2)) {
     if ((st & 0xF0) == 0x90 && d2) {
       play_on(d1, d2);
     } else if ((st & 0xF0) == 0x80 || (st & 0xF0) == 0x90) {
       play_off(d1);
+    } else if ((st & 0xF0) == 0xB0 && cc_n < 32) {
+      cc_num[cc_n] = d1, cc_val[cc_n] = d2, cc_n++;
     }
   }
 
@@ -1419,7 +1431,55 @@ void loop(void) {
   if (oct != saved.octave && oct >= -2 && oct <= 2) {
     saved.octave = (int8_t)oct, changed = 1, t = TIP_OCTAVE;
   }
-  if (button_pressed(BTN_SEQ)) { /* Learn mode on or off */
+  /* the Coach setting things up */
+  int seq_toggle = button_pressed(BTN_SEQ);
+  for (int i = 0; i < cc_n; i++) {
+    int v = cc_val[i];
+    switch (cc_num[i]) {
+      case 20:
+        if (v < 12 && v != saved.sa) {
+          saved.sa = (uint8_t)v, retune = 1, changed = 1, t = TIP_SA;
+        }
+        break;
+      case 21:
+        if (v < THAATS && v != saved.thaat) {
+          saved.thaat = (uint8_t)v, retune = 1, changed = 1, t = TIP_THAAT;
+        }
+        break;
+      case 22:
+        if ((v >= 64) != drone_on) {
+          drone_on = v >= 64, t = TIP_DRONE;
+        }
+        break;
+      case 23:
+        if ((v >= 64 ? MODE_CHORD : MODE_SAROD) != saved.mode && !learn) {
+          saved.mode = v >= 64 ? MODE_CHORD : MODE_SAROD, depth = 0, lead_held = 0, changed = 1, t = TIP_MODE;
+        }
+        break;
+      case 24:
+        if ((v >= 64) != learn) {
+          seq_toggle = 1;
+        }
+        break;
+      case 25:
+        coach_blink = (uint16_t)((coach_blink & 0xF80) | (v & 0x7F));
+        break;
+      case 26:
+        coach_blink = (uint16_t)((coach_blink & 0x07F) | (v & 0x1F) << 7);
+        break;
+      case 27:
+        coach_lit = (uint16_t)((coach_lit & 0xF80) | (v & 0x7F));
+        break;
+      case 28:
+        coach_lit = (uint16_t)((coach_lit & 0x07F) | (v & 0x1F) << 7);
+        break;
+      case 29:
+        coach_until = v >= 64 ? now + 3000 : 0;
+        break;
+    }
+  }
+  cc_n = 0;
+  if (seq_toggle) { /* Learn mode on or off */
     learn_stop();
     if (!learn) {
       learn = 1, learn_drone_was = drone_on, learn_mode_was = saved.mode;
@@ -1560,7 +1620,12 @@ void loop(void) {
       notes[n++] = held[k];
     }
     int pc = ((base + k) % 12 - saved.sa + 24) % 12;
-    led_key(k, scale_mask >> pc & 1);
+    if (now < coach_until && !learn) { /* the Coach's lesson: its scale steady, the next note blinking */
+      int c = (base + k) % 12;
+      led_key(k, (coach_blink >> c & 1) ? (now / 250 & 1) : (coach_lit >> c & 1));
+    } else {
+      led_key(k, scale_mask >> pc & 1);
+    }
   }
 
   /* the picture, at most 30 times a second */
