@@ -1865,16 +1865,16 @@ function openStep(full) {
   instPicked = false; markInst();
   renderProgress(); renderRail(); drawAll(); save();
 }
-// play notes for you; an ear test (hidden) plays from the computer with nothing lit, so neither the screen
-// nor the FM-1's own display gives the answer away
+// play notes for you on the FM-1 (or the computer without one); an ear test (hidden) shows nothing on screen
 async function playNotes(list, hidden) {
   if (demoBusy) return;
   demoBusy = true; phrase = [];
   for (const [m, ms] of list) {
-    if (hidden) pluck(m, 0.3);
-    else { if (midiOut) midiOut.send([0x90, m, 96]); else pluck(m); noteOn(m, 'demo'); }
+    if (midiOut) midiOut.send([0x90, m, 96]); else pluck(m);
+    if (!hidden) noteOn(m, 'demo');
     await new Promise((r) => setTimeout(r, ms));
-    if (!hidden) { if (midiOut) midiOut.send([0x80, m, 0]); noteOff(m); }
+    if (midiOut) midiOut.send([0x80, m, 0]);
+    if (!hidden) noteOff(m);
   }
   demoBusy = false; demoQuietUntil = tnow() + 0.5; lastNote = null; phrase = [];
   drawAll();
