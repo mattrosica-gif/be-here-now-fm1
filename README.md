@@ -8,6 +8,8 @@ A sarod-inspired firmware for the M-VAVE FM-1 that teaches you what you play. Bu
               CHORD mode: four strings, one per key, and the screen names the chord.
   SEL         switch SAROD / CHORD
   PLAY        the tanpura drone on / off (Pa, Sa, Sa, low Sa, round and round)
+  REC         the scale on its own: up from Sa and back down, the keys lighting up as it climbs;
+              KNOB4 is the tempo; play a key and it stops for your turn
   PRESETS     the thaat (the parent scale): the sympathetic strings retune to it
   ALGORITHM   Sa, the home note (C .. B)
   OCT- OCT+   the octave

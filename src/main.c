@@ -16,6 +16,8 @@
  *   SAVE        keep the settings through power-off (they are also kept on their own when all is silent)
  *   GLO         how busy the sound engine is
  *   SEQ         Learn mode: Raga studio, Find the note, Alankars, Taal (see learn.h)
+ *   REC         the scale on its own: the thaat from Sa up to Sa and back down, over and over, the keys lighting up
+ *               as it climbs (the note sounding blinks); KNOB4 is its tempo; play a key and it stops for your turn
  *
  * Over USB MIDI, notes in play, and the notes you play go out. The Coach (coach.html) sets the instrument up
  * with control changes: CC 20 Sa (0..11), CC 21 thaat (0..9), CC 22 drone (>= 64 on), CC 23 mode (>= 64 Chord),
@@ -551,7 +553,12 @@ enum { TIP_TONE,
        TIP_LEARN,
        TIP_LESSON,
        TIP_ITEM,
-       TIP_TEMPO };
+       TIP_TEMPO,
+       TIP_SCALE };
+static uint8_t scale_on, scale_turn; /* REC: the scale playing on its own; stopped by a key (your turn) */
+static uint32_t scale_keys;          /* the keys it has played this time up and down */
+static int scale_now = -1;           /* the key sounding now */
+static uint8_t scale_note;           /* the note it is playing */
 static uint32_t load_avg, load_max; /* percent, over the last second */
 static uint32_t gap_max_us, gap_show; /* the longest time between two readings of the keys, for GLO */
 
@@ -886,6 +893,15 @@ static void tip_text(int tip, const char **title, const char **a, const char **b
       *title = "Tempo", *a = buf;
       break;
     }
+    case TIP_SCALE:
+      if (scale_turn) {
+        *title = "Your turn", *a = "play it back", *b = "REC: hear it again";
+      } else if (scale_on) {
+        *title = THAAT[cur.thaat].name, *a = "up and back down", *b = "KNOB4: tempo";
+      } else {
+        *title = "Scale off", *a = "REC plays the", *b = "scale for you";
+      }
+      break;
     case TIP_JHALA:
       *title = cur.jhala ? "Jhala on" : "Jhala off";
       *a = cur.jhala ? "hold a note: high" : "ARP turns on";
@@ -1388,8 +1404,13 @@ void loop(void) {
   uint32_t now = millis();
 
   /* the keys, and MIDI notes from a computer or a keyboard */
+  int key_hit = 0;
   for (int k = 0; k < KEY_COUNT; k++) {
     if (key_pressed(k)) {
+      key_hit = 1;
+      if (scale_note) { /* your turn: let go of the scale's note first, so yours is plucked, not slid to */
+        play_off(scale_note), scale_note = 0;
+      }
       held[k] = (uint8_t)(base + k);
       play_on(held[k], 100);
       midi_send(0x90, held[k], 100);
@@ -1573,7 +1594,7 @@ void loop(void) {
   }
   for (int k = 0; k < 4; k++) {
     int32_t d = encoder(ENC_KNOB1 + k);
-    if (d && k == 3 && learn && (lesson == L_ALANKAR || lesson == L_TAAL)) { /* KNOB4 is the tempo here */
+    if (d && k == 3 && ((learn && (lesson == L_ALANKAR || lesson == L_TAAL)) || (scale_on && !learn))) { /* KNOB4 is the tempo here */
       int v = tempo_knob + d * 2;
       tempo_knob = (uint8_t)(v < 0 ? 0 : v > 127 ? 127
                                                  : v);
@@ -1584,6 +1605,47 @@ void loop(void) {
       saved.knob[k] = (uint8_t)(v < 0 ? 0 : v > 127 ? 127
                                                     : v);
       changed = 1, t = TIP_TONE + k, knob_on = k;
+    }
+  }
+  { /* REC: the scale on its own, from the lowest Sa on the keys up to the next Sa and back down */
+    static int idx, sig;
+    static uint32_t next_at;
+    int s = saved.thaat | saved.sa << 4 | (saved.octave + 2) << 8 | saved.mode << 11;
+    if (button_pressed(BTN_REC) && !learn) {
+      scale_on ^= 1, scale_turn = 0, idx = 0, next_at = now, scale_keys = 0, t = TIP_SCALE;
+    } else if (scale_on && (learn || key_hit)) {
+      scale_on = 0, scale_turn = key_hit && !learn, scale_keys = 0, t = learn ? t : TIP_SCALE;
+    } else if (scale_on && s != sig) { /* a new scale, Sa, octave or mode: start again from Sa */
+      idx = 0, next_at = now + 250, scale_keys = 0;
+    }
+    sig = s;
+    if (scale_note && (!scale_on || now >= next_at)) {
+      play_off(scale_note), scale_note = 0, scale_now = -1;
+    }
+    if (scale_on && now >= next_at) {
+      uint8_t seq[26];
+      int n = 0, lo = base + ((saved.sa - base % 12) % 12 + 12) % 12;
+      uint16_t m = THAAT[saved.thaat].mask;
+      for (int d = 0; d < 12; d++) {
+        if (m >> d & 1) {
+          seq[n++] = (uint8_t)(lo + d);
+        }
+      }
+      int up = n + 1;
+      seq[n++] = (uint8_t)(lo + 12);
+      for (int i = up - 2; i >= 0; i--) {
+        seq[n++] = seq[i];
+      }
+      uint32_t beat = 60000u / learn_tempo();
+      if (idx < n) {
+        scale_note = seq[idx], scale_now = seq[idx] - base;
+        play_on(scale_note, 92);
+        scale_keys |= 1u << (scale_now & 31);
+        next_at = now + (idx == up - 1 || idx == n - 1 ? 2 * beat : beat); /* the top and the bottom Sa linger */
+        idx++;
+      } else { /* a breath, then again */
+        idx = 0, scale_keys = 0, next_at = now + beat;
+      }
     }
   }
   if (t >= 0) {
@@ -1611,6 +1673,7 @@ void loop(void) {
   led_button(BTN_ARP, jhala);
   led_button(BTN_FX, saved.reverb != 2);
   led_button(BTN_SEQ, learn);
+  led_button(BTN_REC, scale_on);
 
   /* what is held */
   base = KEY_FIRST_NOTE + 12 * saved.octave;
@@ -1620,7 +1683,9 @@ void loop(void) {
       notes[n++] = held[k];
     }
     int pc = ((base + k) % 12 - saved.sa + 24) % 12;
-    if (now < coach_until && !learn) { /* the Coach's lesson: its scale steady, the next note blinking */
+    if (scale_on) { /* REC: the keys light up as the scale climbs; the one sounding blinks */
+      led_key(k, k == scale_now ? (now / 125 & 1) : (int)(scale_keys >> k & 1));
+    } else if (now < coach_until && !learn) { /* the Coach's lesson: its scale steady, the next note blinking */
       int c = (base + k) % 12;
       led_key(k, (coach_blink >> c & 1) ? (now / 250 & 1) : (coach_lit >> c & 1));
     } else {
