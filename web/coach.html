@@ -133,6 +133,54 @@ select { font: inherit; background: var(--panel); color: var(--ivory); border: 1
   .say { font-size: 19px; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+/* ---- the Coach, second edition */
+[hidden] { display: none !important; }
+.c-land { color: #f5a623; } .c-pass { color: #7fd1c7; } .c-out { color: #ff7a59; }
+nav h2 { margin-top: 18px; }
+nav h2:first-child { margin-top: 4px; }
+.unit.special .n { border-style: dashed; }
+.cardTitle { margin: 0 0 6px; font-size: 26px; font-weight: 600; }
+.small { font-size: 18px; }
+.widget { margin-top: 18px; }
+.widget:empty { display: none; }
+.widget svg { width: 100%; height: auto; display: block; background: #11143d; border: 1px solid var(--line); border-radius: 12px; }
+.wrow { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; align-items: center; }
+.wrow .btn.on { background: var(--ivory); color: var(--ink); border-color: var(--ivory); }
+.wnote { margin: 10px 0 0; font-size: 17px; color: var(--ivory); }
+.wnote b { color: var(--marigold); font-weight: 600; }
+input[type=range] { accent-color: var(--marigold); width: 160px; vertical-align: middle; }
+.row { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; margin-top: 14px; color: var(--mist); font-size: 15px; }
+.row label { display: flex; gap: 8px; align-items: center; }
+.chordNow { margin-top: 18px; display: flex; gap: 18px; align-items: baseline; flex-wrap: wrap; min-height: 64px; }
+.chordNow .big { font-size: 52px; font-weight: 500; line-height: 1; }
+.chordNow .tones { font-size: 19px; }
+.chordNow .sarg { font-size: 19px; color: var(--marigold); }
+.beats { display: flex; gap: 8px; margin-top: 12px; }
+.beats i { width: 14px; height: 14px; border-radius: 50%; background: var(--line); }
+.beats i.on { background: var(--marigold); box-shadow: 0 0 10px var(--marigold); }
+.beats i.one { outline: 2px solid var(--mist); outline-offset: 2px; }
+.think { margin: 16px 0 0; padding-left: 22px; font-size: 17px; }
+.think li { margin: 4px 0; }
+.reflect { margin-top: 14px; font-size: 18px; }
+.reflect p { margin: 6px 0; }
+.reflect b { color: var(--marigold); font-weight: 600; }
+.log { background: #161a4c; border: 1px solid #ffffff12; border-radius: 16px; padding: 14px 18px; }
+.log h3 { margin: 0 0 6px; font-size: 13px; color: var(--mist); font-weight: 500; }
+.log ol { margin: 0; padding-left: 20px; font-size: 16px; }
+.log li { margin: 3px 0; }
+.log li.landed::marker { color: var(--marigold); }
+.log .empty { color: var(--mist); font-size: 15px; margin: 0; }
+.dict input { font: inherit; width: 100%; max-width: 420px; background: #11143d; color: var(--ivory); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; margin: 10px 0 14px; }
+.dict table { width: 100%; border-collapse: collapse; font-size: 16px; }
+.dict th { text-align: left; color: var(--mist); font-weight: 500; font-size: 13px; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+.dict td { padding: 9px 8px; border-bottom: 1px solid #ffffff10; vertical-align: top; }
+.dict td:nth-child(2) { color: var(--marigold); font-weight: 600; }
+.dict .scroll { max-height: 62vh; overflow: auto; }
+.micbtn .lvl { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--dim); margin-right: 8px; vertical-align: 1px; }
+.micbtn.on { border-color: var(--marigold); }
+.micbtn.on .lvl { background: var(--marigold); }
+.fig h4 { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.fig h4 .seg button { min-height: 32px; padding: 3px 11px; font-size: 14px; }
 </style>
 </head>
 <body>
@@ -143,28 +191,61 @@ select { font: inherit; background: var(--panel); color: var(--ivory); border: 1
       <path d="M0 0 C-6 -3 -11 -9 -12 -15 C-6 -13 -2 -8 0 0Z" fill="#e27a98"/>
       <path d="M0 0 C6 -3 11 -9 12 -15 C6 -13 2 -8 0 0Z" fill="#e27a98"/>
       <path d="M-15 2 H15" stroke="#f5a623" stroke-width="1.6" stroke-linecap="round"/></g></svg>
-    <h1>BE HERE NOW Coach</h1><span>Western and Indian music, one note at a time</span>
+    <h1>BE HERE NOW Coach</h1><span>how music works, and how to play freely</span>
   </div>
-  <div class="conn"><a class="btn ghost" href="./#install" style="text-decoration:none">Install firmware</a><span class="dot" id="dot"></span><span id="connText">FM-1 not connected</span>
-    <button class="btn" id="connect">Connect FM-1</button></div>
+  <div class="conn">
+    <span class="dot" id="dot"></span><span id="connText">FM-1 not connected</span>
+    <button class="btn" id="connect">Connect FM-1</button>
+    <button class="btn micbtn" id="micBtn"><span class="lvl" id="micLvl"></span><span id="micText">Listen with the mic</span></button>
+    <a class="btn ghost" href="./#install" style="text-decoration:none">Install firmware</a>
+  </div>
 </header>
 <div class="wrap">
-  <nav aria-label="Units"><h2>Your path</h2><div id="units"></div></nav>
+  <nav aria-label="Lessons"><div id="rail"></div></nav>
   <main>
     <section class="stage">
-      <article class="card" aria-live="polite">
+      <article class="card" id="lessonCard" aria-live="polite">
         <div class="where"><span id="unitName"></span><div class="pips" id="pips"></div></div>
         <p class="say" id="say"></p>
-        <div class="doit" id="doit"><div class="lab">On your FM-1</div><div class="what" id="what"></div>
+        <div class="widget" id="widget"></div>
+        <div class="doit" id="doit"><div class="lab">Your turn</div><div class="what" id="what"></div>
           <div class="progress" id="progress"></div></div>
+        <div class="beats" id="beatDots" hidden><i class="one"></i><i></i><i></i><i></i></div>
         <div class="quiz" id="quiz"></div>
         <div class="feedback" id="feedback"></div>
         <div class="nav">
           <button class="btn ghost" id="back">Back</button>
           <button class="btn" id="demo" hidden>Play it for me</button>
+          <button class="btn" id="hint" hidden>Hint</button>
+          <button class="btn ghost" id="backing" hidden>Stop the backing</button>
           <span class="spacer"></span>
           <button class="btn primary" id="next">Next</button>
         </div>
+      </article>
+      <article class="card" id="jamCard" hidden>
+        <h2 class="cardTitle">Jam room</h2>
+        <p class="say small">Pick a backing, press Start, and play whatever comes. Every note is coloured by what it is doing: <b class="c-land">landing</b> (a chord tone, or Sa and Pa over the drone), <b class="c-pass">passing</b> through the scale, or <b class="c-out">outside</b> it.</p>
+        <div class="row">
+          <label>Backing <select id="jamBacking"></select></label>
+          <label>Tempo <input type="range" id="jamTempo" min="50" max="140" value="80"> <span id="jamBpm">80</span></label>
+          <button class="btn primary" id="jamGo">Start</button>
+        </div>
+        <div class="chordNow" id="jamChord"></div>
+        <div class="beats" id="jamBeats" hidden><i class="one"></i><i></i><i></i><i></i></div>
+        <ol class="think">
+          <li>Before a phrase, pick where it will land. Wander on the way.</li>
+          <li>Keep phrases short, and breathe between them.</li>
+          <li>Take an idea you just played and change one thing: its rhythm, its starting note, its direction.</li>
+          <li>Over chords, land on the new chord's notes when it arrives.</li>
+        </ol>
+        <div class="row"><button class="btn" id="jamReflect">How did that go?</button></div>
+        <div class="reflect" id="jamOut"></div>
+      </article>
+      <article class="card dict" id="dictCard" hidden>
+        <h2 class="cardTitle">Two languages</h2>
+        <p class="say small">The same ideas, named twice. Western terms on the left, Indian on the right.</p>
+        <input type="search" id="dictFind" placeholder="Find a word, like fifth, meend or downbeat" aria-label="Find a word">
+        <div class="scroll"><table><thead><tr><th>Western</th><th>Indian</th><th>In plain words</th></tr></thead><tbody id="dictRows"></tbody></table></div>
       </article>
       <div class="pair">
         <div class="names">
@@ -173,13 +254,13 @@ select { font: inherit; background: var(--panel); color: var(--ivory); border: 1
           <section class="name" aria-label="Indian name"><h3>Indian</h3>
             <div class="big dev" id="iBig">&nbsp;</div><div class="sub" id="iSub">play a note</div><div class="sub2" id="iSub2">&nbsp;</div></section>
         </div>
-        <p class="hint" id="hint">Every note you play shows up here in both languages, and below on the mala, the piano and the guitar.</p>
+        <section class="log" aria-label="Your recent phrases"><h3>What you just played</h3><div id="log"><p class="empty">Your phrases show up here, with where each one landed.</p></div></section>
       </div>
     </section>
-    <section aria-label="The scale on three instruments">
+    <section aria-label="The notes on the instruments">
       <div class="viewbar">
         <label for="scaleSel">Scale lit up</label><select id="scaleSel"></select>
-        <div class="seg" role="group" aria-label="Names on the keys">
+        <div class="seg" role="group" aria-label="Names on the keys" id="labelSeg">
           <button data-l="names" class="on">C and Sa</button><button data-l="degrees">1 2 3</button><button data-l="solfege">do re mi</button>
         </div>
         <button class="btn" id="hearScale">Hear this scale</button>
@@ -188,15 +269,18 @@ select { font: inherit; background: var(--panel); color: var(--ivory); border: 1
       <div class="instruments">
         <div class="mala"><svg id="mala" viewBox="0 0 300 300" role="img" aria-label="The mala of twelve notes, Sa at the top"></svg></div>
         <div class="keys">
-          <div class="fig"><h4>Piano</h4><svg id="piano" role="img" aria-label="Piano keyboard with the scale lit up"></svg></div>
-          <div class="fig"><h4>Guitar (standard tuning, high E string at the top, like a chord chart)</h4><svg id="guitar" role="img" aria-label="Guitar fretboard with the scale lit up"></svg></div>
+          <div class="fig"><h4>Piano</h4><svg id="piano" role="img" aria-label="Piano keyboard"></svg></div>
+          <div class="fig"><h4><span id="instTitle">Sarod</span>
+            <span class="seg" role="group" aria-label="Which instrument to show" id="instSeg"><button data-i="auto" class="on">Follow the FM-1</button><button data-i="sarod">Sarod</button><button data-i="guitar">Guitar</button></span></h4>
+            <svg id="inst" role="img" aria-label="Where the note lies on the instrument"></svg></div>
           <div class="legend">
             <span><i style="background:#f4ecd8"></i>in the scale</span>
             <span><i style="background:#6f739c"></i>not in the scale</span>
             <span><i style="background:#f4ecd8;box-shadow:inset 0 -4px 0 #f5a623"></i>home (Sa)</span>
-            <span><i style="background:var(--marigold)"></i>what you play</span>
-            <span><i style="background:#f6c46e"></i>played in this step</span>
-            <span><i style="background:none;border:2px solid var(--rose)"></i>what the lesson wants next</span>
+            <span><i style="background:#f5a623"></i>landing</span>
+            <span><i style="background:#7fd1c7"></i>passing</span>
+            <span><i style="background:#ff7a59"></i>outside</span>
+            <span><i style="background:none;border:2px solid var(--rose)"></i>a hint</span>
           </div>
         </div>
       </div>
@@ -205,43 +289,195 @@ select { font: inherit; background: var(--panel); color: var(--ivory); border: 1
 </div>
 <script>
 {
-// ------------------------------------------------------------------ music names (Sa is C throughout)
+// ================================================================== names and numbers (pitch classes: C = 0)
 const LETTER = ['C', 'D♭', 'D', 'E♭', 'E', 'F', 'F♯', 'G', 'A♭', 'A', 'B♭', 'B'];
-const LETTER_ALT = ['', 'C♯', '', 'D♯', '', '', 'G♭', '', 'G♯', '', 'A♯', ''];
+// these are all by distance from Sa
 const SOLFEGE = ['do', 'ra', 're', 'me', 'mi', 'fa', 'fi', 'sol', 'le', 'la', 'te', 'ti'];
 const DEGREE = ['1', '♭2', '2', '♭3', '3', '4', '♯4', '5', '♭6', '6', '♭7', '7'];
-const INTERVAL = ['unison (home)', 'minor 2nd', 'major 2nd', 'minor 3rd', 'major 3rd', 'perfect 4th', 'tritone', 'perfect 5th', 'minor 6th', 'major 6th', 'minor 7th', 'major 7th'];
+const INTERVAL = ['home', 'minor 2nd', 'major 2nd', 'minor 3rd', 'major 3rd', 'perfect 4th', 'tritone', 'perfect 5th', 'minor 6th', 'major 6th', 'minor 7th', 'major 7th'];
+const RATIO = ['1:1', '16:15', '9:8', '6:5', '5:4', '4:3', '45:32', '3:2', '8:5', '5:3', '9:5', '15:8'];
+const SIMPLE = [1, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 0];
 const SARGAM = ['Sa', 'komal Re', 'Re', 'komal Ga', 'Ga', 'Ma', 'tivra Ma', 'Pa', 'komal Dha', 'Dha', 'komal Ni', 'Ni'];
+const SHORT = ['Sa', 'Re', 'Re', 'Ga', 'Ga', 'Ma', 'Ma', 'Pa', 'Dha', 'Dha', 'Ni', 'Ni'];
+const SARG_S = ['Sa', 're', 'Re', 'ga', 'Ga', 'Ma', 'Ma′', 'Pa', 'dha', 'Dha', 'ni', 'Ni']; // lowercase = komal, ′ = tivra
 const DEV = ['सा', 'रे', 'रे', 'ग', 'ग', 'म', 'म', 'प', 'ध', 'ध', 'नि', 'नि'];
 const MARK = [0, 1, 0, 1, 0, 0, 2, 0, 1, 0, 1, 0]; // 1 komal, 2 tivra
-// same order as the firmware, so the index is what CC 21 sends
-const THAAT = [
-  { name: 'Bilawal', mode: 'the C major scale (Ionian mode)', pcs: [0, 2, 4, 5, 7, 9, 11] },
-  { name: 'Kalyan', mode: 'C Lydian: major with a raised 4th', pcs: [0, 2, 4, 6, 7, 9, 11] },
-  { name: 'Khamaj', mode: 'C Mixolydian: major with a lowered 7th', pcs: [0, 2, 4, 5, 7, 9, 10] },
-  { name: 'Kafi', mode: 'C Dorian: minor with a raised 6th', pcs: [0, 2, 3, 5, 7, 9, 10] },
-  { name: 'Asavari', mode: 'C natural minor (Aeolian mode)', pcs: [0, 2, 3, 5, 7, 8, 10] },
-  { name: 'Bhairavi', mode: 'C Phrygian: minor with a lowered 2nd', pcs: [0, 1, 3, 5, 7, 8, 10] },
-  { name: 'Bhairav', mode: 'C double harmonic: no everyday Western name', pcs: [0, 1, 4, 5, 7, 8, 11] },
-  { name: 'Purvi', mode: 'no everyday Western name', pcs: [0, 1, 4, 6, 7, 8, 11] },
-  { name: 'Marwa', mode: 'no everyday Western name', pcs: [0, 1, 4, 6, 7, 9, 11] },
-  { name: 'Todi', mode: 'no everyday Western name', pcs: [0, 1, 3, 6, 7, 8, 11] },
+const FEEL = [
+  'home: complete rest',
+  'dark and intense; it sinks to Sa',
+  'floating; it wants to step to Sa or Ga',
+  'soft and sad: the minor sound',
+  'sweet and settled: the major sound',
+  'hangs over Ga like a sigh about to fall',
+  'bright and weightless; it leans up to Pa',
+  'strong and open: a second home',
+  'heavy; it sinks to Pa',
+  'warm and a little wistful',
+  'bluesy and relaxed; it does not need to resolve',
+  'the most tension: a half step below Sa, it leans up into it',
 ];
-const SHORT = ['Sa', 'Re', 'Re', 'Ga', 'Ga', 'Ma', 'Ma', 'Pa', 'Dha', 'Dha', 'Ni', 'Ni'];
-const CHORDS = [[[0, 4, 7], 'major'], [[0, 3, 7], 'minor'], [[0, 3, 6], 'diminished'], [[0, 4, 8], 'augmented'],
-  [[0, 4, 7, 10], '7'], [[0, 4, 7, 11], 'maj7'], [[0, 3, 7, 10], 'm7']];
+const ENDING = [
+  'a full stop. That is release.',
+  'dark and unfinished; it wants to sink to Sa.',
+  'mid-air; it wants to step down to Sa. A question.',
+  'a soft, sad pause.',
+  'a gentle pause: settled, but not finished.',
+  'suspended; it wants to fall to Ga.',
+  'bright and unresolved; it leans up to Pa.',
+  'stable but open: more a comma than a full stop.',
+  'heavy and unfinished; it wants to sink to Pa.',
+  'warm but open.',
+  'bluesy; it can sit there without resolving.',
+  'hanging in the air, begging to rise to Sa. A question.',
+];
+const SCALES = [
+  { name: 'Bilawal', west: 'the major scale (Ionian)', pcs: [0, 2, 4, 5, 7, 9, 11], fm1: 0 },
+  { name: 'Kalyan', west: 'Lydian: major with a raised 4th', pcs: [0, 2, 4, 6, 7, 9, 11], fm1: 1 },
+  { name: 'Khamaj', west: 'Mixolydian: major with a lowered 7th', pcs: [0, 2, 4, 5, 7, 9, 10], fm1: 2 },
+  { name: 'Kafi', west: 'Dorian: minor with a raised 6th', pcs: [0, 2, 3, 5, 7, 9, 10], fm1: 3 },
+  { name: 'Asavari', west: 'natural minor (Aeolian)', pcs: [0, 2, 3, 5, 7, 8, 10], fm1: 4 },
+  { name: 'Bhairavi', west: 'Phrygian: minor with a lowered 2nd', pcs: [0, 1, 3, 5, 7, 8, 10], fm1: 5 },
+  { name: 'Bhairav', west: 'double harmonic: no everyday Western name', pcs: [0, 1, 4, 5, 7, 8, 11], fm1: 6 },
+  { name: 'Purvi', west: 'no everyday Western name', pcs: [0, 1, 4, 6, 7, 8, 11], fm1: 7 },
+  { name: 'Marwa', west: 'no everyday Western name', pcs: [0, 1, 4, 6, 7, 9, 11], fm1: 8 },
+  { name: 'Todi', west: 'no everyday Western name', pcs: [0, 1, 3, 6, 7, 8, 11], fm1: 9 },
+  { name: 'Bhupali', raga: true, west: 'the major pentatonic', pcs: [0, 2, 4, 7, 9], fm1: 0 },
+  { name: 'Dhani', raga: true, west: 'the minor pentatonic', pcs: [0, 3, 5, 7, 10], fm1: 3 },
+  { name: 'Blues', blues: true, west: 'the blues scale', pcs: [0, 3, 5, 6, 7, 10], fm1: 3 },
+];
+const scaleTitle = (i) => (i < 0 ? 'All 12 notes' : SCALES[i].blues ? 'Blues scale' : SCALES[i].raga ? `Raga ${SCALES[i].name}` : `${SCALES[i].name} thaat`);
+const QUAL = { '': [0, 4, 7], m: [0, 3, 7], 7: [0, 4, 7, 10], maj7: [0, 4, 7, 11], m7: [0, 3, 7, 10] };
+const chord = (root, q = '') => ({ root, q, pcs: QUAL[q].map((i) => (root + i) % 12), name: LETTER[root] + q });
+const C7 = chord(0, '7'), F7 = chord(5, '7'), G7 = chord(7, '7');
+const BACKINGS = {
+  drone: { name: 'Drone on Sa (raga style)', kind: 'drone', sa: 0, scale: 0 },
+  pulse: { name: 'Just a pulse', kind: 'pulse', sa: 0, scale: 0, bpm: 80 },
+  pop: { name: 'C Am F G (I vi IV V)', kind: 'chords', sa: 0, scale: 0, beats: 4, bpm: 76, prog: [chord(0), chord(9, 'm'), chord(5), chord(7)] },
+  blues: { name: '12-bar blues in C', kind: 'chords', sa: 0, scale: 12, beats: 4, bpm: 84, prog: [C7, C7, C7, C7, F7, F7, C7, C7, G7, F7, C7, G7] },
+  minor: { name: 'Am G F G (minor rock, Sa on A)', kind: 'chords', sa: 9, scale: 4, beats: 4, bpm: 84, prog: [chord(9, 'm'), chord(7), chord(5), chord(7)] },
+  dorian: { name: 'Dm7 G (Dorian groove, Sa on D)', kind: 'chords', sa: 2, scale: 3, beats: 8, bpm: 92, prog: [chord(2, 'm7'), chord(7)] },
+  jazz: { name: 'Dm7 G7 Cmaj7 (ii V I)', kind: 'chords', sa: 0, scale: 0, beats: 4, bpm: 80, prog: [chord(2, 'm7'), chord(7, '7'), chord(0, 'maj7'), chord(0, 'maj7')] },
+};
+const FUNC_COL = { land: '#f5a623', pass: '#7fd1c7', out: '#ff7a59' };
 const pcOf = (m) => ((m % 12) + 12) % 12;
-const letter = (pc) => LETTER[pc] + (LETTER_ALT[pc] ? ` / ${LETTER_ALT[pc]}` : '');
-const both = (pc) => `${LETTER[pc]} (${SARGAM[pc]})`;
-const devHTML = (pc) => `<span class="${MARK[pc] === 1 ? 'komal' : MARK[pc] === 2 ? 'tivra' : ''}">${DEV[pc]}</span>`;
+const hz = (m) => 440 * 2 ** ((m - 69) / 12);
+let SA = 0; // Sa's pitch class
+const rel = (pc) => (pc - SA + 12) % 12;
+const abs = (r) => (r + SA) % 12;
+const both = (pc) => `${LETTER[pc]} (${SARGAM[rel(pc)]})`;
+const devHTML = (r) => `<span class="${MARK[r] === 1 ? 'komal' : MARK[r] === 2 ? 'tivra' : ''}">${DEV[r]}</span>`;
+const chip = (text, ok) => `<span class="chip${ok ? ' ok' : ''}">${text}</span>`;
 
-// ------------------------------------------------------------------ the lessons
-// step kinds: say (read, then Next) · play (the Coach listens) · listen (Play it for me) · quiz
-// expect: { seq: [pcs] } in order · { any: [pcs] } one of them · { chord: [pcs] } held together · { octave: pc } two
-// different octaves · { count: n } play n notes freely
-// setup: what the Coach sets on the FM-1 when the step opens: thaat (index), drone, chord (mode)
-const C4 = 60;
-const UNITS = [
+// ================================================================== lessons: think and improvise
+const IMP = [
+  { title: 'Gravity', sub: 'why scales matter', backing: 'drone', scale: 0, steps: [
+    { say: 'A scale is not a list to memorize. It is a <b>map of gravity</b>. Over the drone, Sa is the ground, and every other note pulls somewhere: some rest, some lean, some ache. Improvising is choosing when to lean and when to land. Western musicians call it <b>tension and release</b>. Indian musicians shape a whole raga around which notes may rest (<b>nyas</b>) and which must keep moving.' },
+    { say: 'Feel the pull of each note.', what: 'Play each note of the scale over the drone and hold it a moment. I will tell you what it does. Find all seven.', task: 'feel',
+      ok: 'Seven notes, seven different pulls. That is what a scale really is.' },
+    { say: 'Now use it.', what: 'Play short phrases with a pause after each. End two of them on Sa, and two anywhere else.', task: 'land',
+      ok: 'Hear the difference? Ending on Sa is a full stop. Ending elsewhere is a comma, or a question.' },
+    { say: 'That is the engine of every solo. You do not need to plan the notes. <b>Plan where you will land</b>, and wander on the way there. Jazz players call landing notes <b>targets</b>; in a raga they are the <b>nyas</b> notes. When a jam feels aimless, it is usually because nothing is landing.' },
+  ] },
+  { title: 'Fewer notes', sub: 'limits make ideas', backing: 'drone', scale: 0, steps: [
+    { say: 'More notes do not mean more ideas. With only a few notes you are forced to get creative with rhythm, repetition and shape, and that is where style comes from. Indian musicians open a raga with <b>alaap</b>: slowly, near Sa, a few notes at a time, adding one only when the others have said everything. That unfolding is called <b>badhat</b>.' },
+    { say: 'Start small.', what: 'Improvise with only Sa, Re and Ga (C, D, E). The FM-1 lights only the keys you may use. Every 12 notes, I will unlock one more.', task: 'unlock',
+      ok: 'All seven, unlocked one at a time: that is the shape of an alaap.' },
+    { say: 'Notice the last two to arrive: <b>Ma</b> and <b>Ni</b>. Each sits a half step from a neighbour, so they carry the most tension, and players handle them with care. Rock and pop players get the same calm by starting with the <b>pentatonic</b> scale, which simply leaves those two out.' },
+  ] },
+  { title: 'Ideas', sub: 'say it, then say it again', backing: 'drone', scale: 0, steps: [
+    { say: 'Listeners follow ideas, not notes. A short idea that comes back, slightly changed, is what makes an improvisation sound composed. Western music calls it a <b>motif</b> and its <b>development</b>. In a raga, the <b>pakad</b> keeps returning, and in a performance the <b>mukhda</b> comes back after every improvised journey.' },
+    { say: 'First, train your ear.', what: 'Listen to the phrase, then play it back. No notes are shown: use your ear. Play it again or ask for a hint if you need to.', task: 'echo',
+      ok: 'Your ear is the most important tool you have: if you can hear it, you can play it.' },
+    { say: 'Now answer instead of copying.', what: 'I will play an idea. Answer it: keep its rhythm with new notes, or keep its shape (which way each step goes) from a new starting note.', task: 'vary',
+      ok: 'Three ideas, each developed instead of copied.' },
+    { say: 'There are four ways to develop any idea, in any style: <b>repeat</b> it, <b>move</b> it (a sequence), <b>change its rhythm</b>, or <b>turn it upside down</b>. When you run out of things to play, take the last thing you played and do one of these to it.' },
+  ] },
+  { title: 'Conversation', sub: 'question and answer', backing: 'drone', scale: 0, steps: [
+    { say: 'Phrases talk to each other. Ending away from home asks a question; ending on home answers it. In the blues this is <b>call and response</b>. In Indian concerts it is <b>sawal-jawab</b>: soloist and tabla player trade phrases, each answering the last.' },
+    { say: 'Be both voices.', what: 'Play a question (end anywhere but Sa or Pa), pause, then answer it (end on Sa). Three pairs.', task: 'qa',
+      ok: 'Three questions, three answers: a conversation.' },
+    { say: 'Now I ask.', what: 'Listen to my question, then answer it. End on Sa.', task: 'ask', ok: 'You answered every question.' },
+    { say: 'With other people, this is how you listen and respond. On your own you can be both voices: ask, answer, then ask a slightly different question and answer it differently.' },
+  ] },
+  { title: 'Rhythm and space', sub: 'when, not just what', backing: 'pulse', scale: 0, steps: [
+    { say: 'Most of what makes a solo sound good is rhythm. Simple notes with intentional timing beat clever notes played evenly, and silence counts too: a rest lets the listener hear what you said. Indian music counts time in a <b>taal</b> cycle whose first beat, <b>sam</b>, is where phrases love to land. Western music calls it the <b>downbeat</b>.' },
+    { say: 'Breathe.', what: 'Play short phrases of 2 to 5 notes, and leave at least two clicks of silence after each. Six phrases.', task: 'space', ok: 'Six sentences with breaths between them.' },
+    { say: 'Start somewhere new.', what: 'Start your phrases somewhere other than beat 1 (the louder click): on beat 2, 3 or 4, or between beats. Three phrases.', task: 'offbeat',
+      ok: 'Starting off the one is called <b>syncopation</b>, and it is most of what makes music groove.' },
+    { say: 'Land on sam.', what: 'Now end a phrase exactly on beat 1, the accented click. Three times.', task: 'sam', ok: 'Three landings on sam.' },
+    { say: 'Indian players love to land on sam by playing a phrase three times so that its last note falls exactly on beat 1. That is a <b>tihai</b>. Try it: a three-note phrase, played three times, ending on the accented click. Once you know tihais you hear them everywhere, in tabla solos and in rock drum fills alike.' },
+  ] },
+  { title: 'Chords', sub: 'a home that moves', backing: 'pop', scale: 0, steps: [
+    { say: 'Over a drone, home never moves. Over chords it does: each chord is a temporary home, and its notes (<b>chord tones</b>) are the safe landings while it lasts. That is why a note can sound right over one chord and sour over the next. It is the biggest difference between the two traditions: <b>Western improvisers chase a moving home; Indian improvisers explore one home deeply.</b>' },
+    { say: 'Land on the change.', what: 'Jam over C, Am, F, G. The FM-1 lights the notes of the chord that is playing. When each new chord arrives, land on one of its notes. Eight times.', task: 'tones', keysChord: true,
+      ok: 'Eight landings on the change. That is the core skill of improvising over chords.' },
+    { say: 'You do not need a new scale for each chord. Stay in the key, and aim your long notes and phrase endings at the current chord’s tones; passing notes in between are fine as long as you do not stop on them. In sargam the four chords are: C = Sa Ga Pa, Am = Dha Sa Ga, F = Ma Dha Sa, G = Pa Ni Re.' },
+  ] },
+  { title: 'The pentatonic', sub: 'your safe playground', backing: 'pop', scale: 10, inst: 'guitar', position: [5, 8], steps: [
+    { say: 'Five notes with no half steps: C D E G A. Since no two of them rub against each other, the <b>major pentatonic</b> sounds good over almost every chord in the key. It is the first scale most guitarists improvise with. Indian music knows it as raga <b>Bhupali</b>, and its minor sibling as raga <b>Dhani</b>.' },
+    { say: 'Play freely.', what: 'Jam over the chords using only the five lit notes. Forty notes. Try to play a wrong one: it is hard.', task: 'penta', ok: 'Forty notes and nothing clashed. That is why everyone starts here.' },
+    { say: 'On guitar, all five notes sit in one shape at the 5th fret (shaded on the neck below). Guitarists call it the A minor pentatonic box, because A C D E G is the same five notes starting from A. Slide the box and you are in another key. The minor pentatonic is the backbone of blues and rock.' },
+    { backing: 'blues', scale: 12, say: 'Add one note: E♭, the <b>blue note</b>. It is komal Ga sliding up toward shuddha Ga, and it is the sound of the blues.',
+      what: 'Over the blues, slide from E♭ up into E three times. On the FM-1 in Sarod mode, hold E♭ and press E. On guitar, bend the string. Both are meend.', task: 'blue',
+      ok: 'That bend is the most borrowed sound in popular music, and it is a meend.' },
+  ] },
+  { title: 'Ornaments', sub: 'how you get there', backing: 'drone', scale: 0, steps: [
+    { say: 'Two people can play the same notes and sound nothing alike. The difference is how they move between them. Indian music treats the space between notes as part of the note: <b>meend</b> (a slide), <b>kan</b> (a flick of a grace note), <b>andolan</b> and <b>gamak</b> (a sway or a shake). Guitarists do the same with bends, slides, hammer-ons and vibrato. Pianists cannot slide, so they use grace notes.' },
+    { say: 'Slide.', what: 'In Sarod mode, hold a key and press the next one to slide to it. Make four slides, up or down.', task: 'slides', ok: 'Four meends.' },
+    { say: 'Flick.', what: 'Play a quick neighbour note just before a main note, and hold the main one. Four times. This works on piano and guitar too.', task: 'kan', ok: 'Four grace notes: kan.' },
+    { say: 'Ornament the arrival, not the journey: slide into your landing notes, or flick a grace note before them. It makes the important notes sound important.' },
+  ] },
+  { title: 'Thinking in ragas', sub: 'a style is a set of habits', backing: 'drone', scale: 1, steps: [
+    { say: 'Two ragas can share a scale and sound completely different, because a raga is a way of moving: which notes to lean on, which to skip going up, which phrases to return to. <b>Yaman</b> lives on <b>Ga</b> (its vadi, the king note) and <b>Ni</b> (its samvadi, the queen), and it tends to rise as Ni Re Ga rather than from Sa. Western players learn the same thing as <b>vocabulary</b>: the licks that make a style sound like itself.' },
+    { say: 'Here is Yaman’s signature phrase, its pakad: Ni Re Ga Re Sa, Pa Ma Ga Re Sa.', what: 'Press Play it for me and listen.',
+      demo: [[59, 520], [62, 520], [64, 700], [62, 520], [60, 900], [67, 520], [66, 520], [64, 700], [62, 520], [60, 1000]] },
+    { say: 'Speak Yaman.', what: 'Improvise and lean on Ga and Ni: hold them, return to them, end phrases on them. The beads grow with the time you spend on each note. When Ga and Ni are among your three biggest, you are speaking Yaman.', task: 'weight',
+      ok: 'You are speaking Yaman.' },
+    { say: 'That is the deepest idea in both traditions: <b>a style is a set of habits</b>. The scale tells you what is allowed; the habits (which notes you lean on, where you land, which shapes you repeat) make it sound like something. To learn any style, listen for its habits, borrow them, then bend them. The Jam room is open whenever you want it.' },
+  ] },
+];
+
+// ================================================================== lessons: why it works
+const WHY = [
+  { title: 'Vibration', sub: 'frequency and the octave', scale: -1, steps: [
+    { say: 'Sound is air vibrating. A note’s pitch is how many times a second it vibrates: its <b>frequency</b>, in hertz (Hz). The A above middle C is 440 Hz. Double a frequency and you get the “same” note, higher: an <b>octave</b>. That is why note names repeat, and why Sa comes back as high Sa (taar Sa) after Ni.', widget: 'octave' },
+    { say: 'Find an octave yourself.', what: 'Play any notes. Each one shows its frequency. Find two whose frequencies are exactly double.', task: 'freq', widget: 'octave',
+      ok: 'Exactly double: an octave. Every octave on the keyboard is a doubling.' },
+  ] },
+  { title: 'Overtones', sub: 'a chord inside every note', scale: -1, steps: [
+    { say: 'A plucked string does not vibrate in just one way. It swings as a whole, and at the same time in halves, thirds, quarters and so on. Each part adds a quieter frequency at 2, 3, 4, 5, 6 times the main one. These <b>overtones</b> blend into what you hear as one note, and their mix is why a sarod and a piano sound different playing the same note. Click any row to hear it alone.', widget: 'harmonics' },
+    { say: 'Now look at harmonics 4, 5 and 6: C, E and G. A <b>major chord</b> is sitting inside every single note. That is physics, not taste. The tanpura’s buzzing bridge (<b>jawari</b>) brings these overtones forward, which is why a good drone seems to hold Ga and Pa as well as Sa. Listen for them.', widget: 'harmonics' },
+  ] },
+  { title: 'Ratios', sub: 'why notes agree or clash', scale: -1, steps: [
+    { say: 'Two notes sound smooth together when their frequencies form a <b>simple ratio</b>. An octave is 2:1, a fifth 3:2, a fourth 4:3, a major third 5:4. Their waves fall back into step quickly, and their overtones line up. Complicated ratios (a half step is about 16:15) never settle, and we hear that as tension. Indian theory calls the agreeing pairs <b>samvaad</b>: Sa with Pa (3:2) and Sa with Ma (4:3).', widget: 'ratio' },
+    { say: 'When two notes are almost in tune, their waves drift in and out of step and you hear a wobble, called <b>beating</b>. Its speed is the difference between the two frequencies. Musicians tune by ear by slowing the wobble until it stops. That is how a sarod player tunes the taraf strings.', widget: 'beats' },
+  ] },
+  { title: 'Major and minor', sub: '4:5:6 and 10:12:15', scale: -1, steps: [
+    { say: 'A major chord is harmonics 4, 5 and 6: frequencies in the ratio <b>4:5:6</b>. A minor chord stacks the same two kinds of third in the other order (the minor third first), which comes to <b>10:12:15</b>. The only difference is the middle note, a half step lower: 5:4 above the root becomes 6:5. Major sits right inside the harmonic series and minor does not, so minor sounds less settled. Why minor sounds <i>sad</i> is partly learned, though, not only physics.', widget: 'triads' },
+    { setup: { chord: true }, say: 'Build both.', what: 'The FM-1 is in Chord mode now. Hold C E G, then C E♭ G, and watch the ratios.', task: 'triad', widget: 'triads',
+      ok: 'One note, a half step, and the whole colour changes.' },
+  ] },
+  { title: 'Fifths', sub: 'where E–F and B–C come from', scale: -1, steps: [
+    { setup: { chord: false }, say: 'Here is where the white keys come from. Start on F and keep going up by a fifth (×3/2): F, C, G, D, A, E, B. Press <b>Add a fifth</b> and watch the keys light up, on screen and on your FM-1. After seven steps, put the notes in order and you get C D E F G A B, with half steps exactly at <b>E–F</b> and <b>B–C</b>: the two places the chain did not put a note in between.', widget: 'fifths' },
+    { say: 'The letters A to G were named for these seven notes long before the black keys existed. That is why the letters follow the seven-note scale and not the twelve keys. Keep stacking past B and the five black keys arrive in the order F♯ C♯ G♯ D♯ A♯, the order sharps appear in key signatures. Indian music rests on the same 3:2: <b>Pa</b> is never altered, and a raga’s vadi and samvadi are usually a fourth or fifth apart.', widget: 'fifths' },
+  ] },
+  { title: 'Twelve equal steps', sub: 'a useful compromise', scale: -1, steps: [
+    { say: 'Twelve fifths should bring you back where you started, but they overshoot: (3/2)<sup>12</sup> is about 129.7, while seven octaves is exactly 128. So pianos and guitars divide the octave into twelve <b>equal</b> steps, each ×2<sup>1/12</sup> (about 1.0595), and every key becomes usable. Fifths come out almost pure, but major thirds are about 14 cents sharp: a seventh of a half step. That is <b>equal temperament</b>.', widget: 'temper' },
+    { say: 'Indian music, played against a fixed drone, never needs to change key, so it can use pure ratios. Singers and sarod players place Ga where it rings with the tanpura, slightly lower than the piano’s E, and some ragas use even finer shades of a note (<b>shruti</b>). A fretless sarod lets the player choose. The FM-1 plays equal temperament, like a piano.', widget: 'temper' },
+  ] },
+  { title: 'The string', sub: 'the math of the neck', scale: 0, inst: 'sarod', steps: [
+    { say: 'On a string, pitch depends on length: halve the length and the frequency doubles. Stop it at 2/3 of its length and you get a fifth; at 3/4, a fourth; at 4/5, a major third. Each half step multiplies the frequency by the same amount, so each one shortens the string by the same <i>fraction</i> (about 5.6%), and the distances shrink as you go up. That is why guitar frets get closer together.', widget: 'string' },
+    { say: 'The sarod has no frets: the player stops the strings with the fingernails against a polished steel plate, and the same math decides where each note lies. Watch the sarod below while you play in Sarod mode: the note marks squeeze together toward the body, and the taraf strings tuned to your note light up as they ring along.', what: 'Play anything in Sarod mode and watch where the fingernail goes.', task: 'count20', ok: 'That is how a sarod player’s map works.' },
+  ] },
+  { title: 'Why it helps', sub: 'physics you can feel', backing: 'drone', scale: 0, steps: [
+    { say: 'Put it together. Notes in a simple ratio with Sa (Pa 3:2, Ma 4:3, Ga 5:4) are stable: you can rest on them. Notes a half step from a stable note (Ni below Sa, Ma above Ga) make complex ratios and pull toward their neighbour. That pull is the gravity you felt in Think and improvise. <b>The physics is the why; the gravity is how it feels.</b>' },
+    { say: 'Play with it.', what: 'Improvise over the drone. Each note shows its ratio with Sa. End phrases on simple ratios to rest, and on complex ones to keep the music moving. Thirty notes.', task: 'consonance',
+      ok: 'Consonance is rest, dissonance is motion. You can now hear both and choose.' },
+  ] },
+];
+
+// ================================================================== lessons: the basics, from the first Coach
+const BASIC = [
   { title: 'Home', sub: 'Sa, the tonic', scale: -1, steps: [
     { setup: { thaat: 0, drone: true, chord: false }, say: 'Every piece of music has a home note. Western musicians call it the <b>tonic</b>. Indian musicians call it <b>Sa</b>. Here, Sa is C, so the names line up with your piano and guitar lessons.<br><br>Listen: I have switched on the drone on your FM-1. That low hum is Sa, held the whole time.' },
     { say: 'Let us find home.', what: 'Play any C. It is the white key just left of each pair of black keys.', expect: { any: [0] }, show: [0],
@@ -333,18 +569,233 @@ const UNITS = [
   ] },
 ];
 
-// ------------------------------------------------------------------ state
-const $ = (id) => document.getElementById(id);
-let u = 0, s = 0, done = {}, stepDone = false, seqI = 0, octSeen = null, played = 0, quizPicked = false;
-const held = new Set();
-let lastNote = null, lastSource = 'you', labelMode = 'names', scaleOverride = null;
-const trail = new Set(); // notes played well in this step stay lit, so a scale builds up on the keys
-try { const saved = JSON.parse(localStorage.getItem('bhn-coach') || '{}'); u = saved.u || 0; s = saved.s || 0; done = saved.done || {}; } catch {}
-const save = () => { try { localStorage.setItem('bhn-coach', JSON.stringify({ u, s, done })); } catch {} };
-const step = () => UNITS[u].steps[s];
+// ================================================================== two languages
+const DICT = [
+  ['Tonic, the home note', 'Sa (shadja)', 'The note everything returns to. Over a drone, it is the drone.'],
+  ['Perfect fifth', 'Pa (pancham)', 'The strongest note after home, a 3:2 ratio. Sa and Pa are achal: never raised or lowered.'],
+  ['Scale degrees 1 to 7', 'Sa Re Ga Ma Pa Dha Ni (sargam)', 'Note names counted from home, so they work in any key.'],
+  ['Movable do (do re mi)', 'Sargam', 'Both name notes by their place relative to home, not by their pitch.'],
+  ['Flat (lowered)', 'Komal', 'Re, Ga, Dha and Ni can be komal. Written with a line under the note.'],
+  ['Sharp (raised)', 'Tivra', 'Only Ma can be tivra. Written with a tick above the note.'],
+  ['Natural', 'Shuddha', 'The unaltered note.'],
+  ['Octave', 'Saptak', 'Mandra (low), madhya (middle) and taar (high) saptak.'],
+  ['Microtones, shades of tuning', 'Shruti', 'Finer shades of pitch than the twelve notes; tradition counts 22 in an octave.'],
+  ['Scale, mode', 'Thaat', 'A parent set of seven notes. Bilawal is the major scale, Kalyan is Lydian, Kafi is Dorian.'],
+  ['Pentatonic (five-note scale)', 'Audav', 'A raga with five notes, like Bhupali. Six notes is shadav, seven is sampurna.'],
+  ['A style, a melodic framework', 'Raga', 'A scale plus habits: how to go up and down, which notes to stress, signature phrases, a mood.'],
+  ['Ascending, descending', 'Aroha, avaroha', 'A raga may go up and come down by different notes.'],
+  ['The most important note', 'Vadi', 'The note a raga leans on most: its king note.'],
+  ['The second most important note', 'Samvadi', 'The queen note, usually a fourth or fifth from the vadi.'],
+  ['Target note, resting note', 'Nyas', 'Notes a raga lets you pause on and end phrases on.'],
+  ['Signature lick, hook', 'Pakad', 'The short phrase that identifies a raga.'],
+  ['Vocabulary, typical moves', 'Chalan', 'How a raga characteristically moves between its notes.'],
+  ['Recurring theme, refrain', 'Mukhda', 'The opening phrase of a composition, returned to after each improvisation.'],
+  ['Free, unmetered opening (rubato)', 'Alaap', 'Slow exploration of the raga with no beat, a few notes at a time.'],
+  ['Developing an idea gradually', 'Badhat, vistar', 'Unfolding a raga step by step, adding notes and range slowly.'],
+  ['Improvisation', 'Upaj (north), manodharma (south)', 'Music made in the moment, inside the raga and the taal.'],
+  ['Fast run', 'Taan', 'A rapid melodic passage.'],
+  ['Fast strumming climax', 'Jhala', 'On sarod and sitar: fast strokes alternating melody notes with the drone strings (chikari).'],
+  ['Slide, glissando, bend', 'Meend', 'Gliding from one note to another without a break.'],
+  ['Grace note', 'Kan', 'A quick touch of a neighbour note before the main note.'],
+  ['Vibrato, oscillation', 'Andolan, gamak', 'Andolan is a slow sway around a note; gamak is a forceful shake.'],
+  ['Ornaments; practice patterns', 'Alankar', 'Both meanings: decoration of a note, and patterned exercises.'],
+  ['Drone', 'Tanpura', 'The instrument that holds Sa and Pa (or Ma) underneath everything.'],
+  ['Sympathetic strings', 'Taraf', 'Unplucked strings tuned to the raga that ring when you play their notes.'],
+  ['Consonance', 'Samvaad', 'Notes that agree, like Sa and Pa (3:2) or Sa and Ma (4:3).'],
+  ['Meter, time signature', 'Taal', 'A rhythmic cycle: Teentaal has 16 beats, Keherwa 8, Dadra 6.'],
+  ['Beat', 'Matra', 'One count of the taal.'],
+  ['Downbeat, “the one”', 'Sam', 'The first beat of the cycle, where phrases love to land.'],
+  ['Unaccented part of the cycle', 'Khali', 'The “empty” section of the taal, marked with a wave of the hand.'],
+  ['Groove, drum pattern', 'Theka', 'The basic tabla pattern of a taal.'],
+  ['Tempo', 'Laya', 'Vilambit (slow), madhya (medium), drut (fast).'],
+  ['Playing with subdivisions', 'Layakari', 'Playing in different subdivisions of the beat against the pulse.'],
+  ['A cadence played three times', 'Tihai', 'A phrase repeated three times so it ends exactly on sam.'],
+  ['Call and response, trading', 'Sawal-jawab', 'Question and answer between soloist and drummer.'],
+  ['Composition', 'Bandish (sung), gat (instrumental)', 'A fixed piece that frames the improvisation.'],
+  ['Chords, harmony', 'No direct equivalent', 'Indian classical music builds everything from melody over the drone instead.'],
+];
 
-// ------------------------------------------------------------------ MIDI: hear the FM-1, set it up, play to it
-let midiOut = null, midiIn = null;
+// ================================================================== state
+const $ = (id) => document.getElementById(id);
+const PATHS = { imp: IMP, why: WHY, basic: BASIC };
+const PATH_NAME = { imp: 'Think and improvise', why: 'Why it works', basic: 'Basics' };
+let path = 'imp', u = 0, s = 0, view = 'unit', done = { imp: {}, why: {}, basic: {} }, labelMode = 'names', instMode = 'auto';
+try {
+  const v = JSON.parse(localStorage.getItem('bhn-coach2') || '{}');
+  if (PATHS[v.path] && PATHS[v.path][v.u] && PATHS[v.path][v.u].steps[v.s]) { path = v.path; u = v.u; s = v.s; }
+  if (['unit', 'jam', 'dict'].includes(v.view)) view = v.view;
+  if (v.done) done = Object.assign(done, v.done);
+  if (v.labelMode) labelMode = v.labelMode;
+  if (v.instMode) instMode = v.instMode;
+} catch {}
+const save = () => { try { localStorage.setItem('bhn-coach2', JSON.stringify({ path, u, s, view, done, labelMode, instMode })); } catch {} };
+const UNITS = () => PATHS[path];
+const step = () => UNITS()[u].steps[s];
+function acc(key, dflt) {
+  const un = UNITS()[u];
+  let v = un[key] !== undefined ? un[key] : dflt;
+  for (let i = 0; i <= s; i++) if (un.steps[i][key] !== undefined) v = un.steps[i][key];
+  return v;
+}
+function accSetup() { const cfg = {}; for (let i = 0; i <= s; i++) Object.assign(cfg, UNITS()[u].steps[i].setup || {}); return cfg; }
+function lessonScale() {
+  const un = UNITS()[u];
+  let sc = un.scale !== undefined ? un.scale : 0;
+  for (let i = 0; i <= s; i++) {
+    const st = un.steps[i];
+    if (st.setup && st.setup.thaat !== undefined) sc = st.setup.thaat;
+    if (st.scale !== undefined) sc = st.scale;
+  }
+  return sc;
+}
+let scaleOverride = null, jamScale = 0;
+const currentScale = () => (scaleOverride !== null ? scaleOverride : view === 'jam' ? jamScale : lessonScale());
+const scaleAbs = () => { const sc = currentScale(); return sc < 0 ? [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] : SCALES[sc].pcs.map(abs); };
+const inScale = (pc) => scaleAbs().includes(pc);
+const scaleRel = () => { const sc = currentScale(); return sc < 0 ? [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] : SCALES[sc].pcs; };
+
+let task = null, widget = null, stepDone = false, seqI = 0, octSeen = null, played = 0, misses = 0, hintShown = false;
+const held = new Map();      // midi -> note, for what you are holding
+const demoHeld = new Set();  // notes the Coach is playing
+const trail = new Set();     // notes played well in this step stay lit
+const weights = new Array(12).fill(0); // time spent on each pitch class
+let lastNote = null, lastSrc = 'fm1', phrase = [], phrases = [], allNotes = [], lastAct = 0, demoBusy = false, demoQuietUntil = 0;
+const tnow = () => performance.now() / 1000;
+
+// ================================================================== sound in the browser
+let actx = null, master = null, gestured = false;
+function audio() {
+  if (!actx) {
+    actx = new AudioContext();
+    const comp = actx.createDynamicsCompressor();
+    master = actx.createGain(); master.gain.value = 0.7;
+    master.connect(comp); comp.connect(actx.destination);
+  }
+  if (actx.state === 'suspended') actx.resume();
+  return actx;
+}
+function env(g, t, a, peak, d) { g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + a); g.gain.exponentialRampToValueAtTime(0.0001, t + a + d); }
+function pluck(m, vel = 0.22, when = 0) {
+  if (!gestured) return;
+  audio();
+  const t = Math.max(actx.currentTime, when), f = hz(m), g = actx.createGain(), lp = actx.createBiquadFilter();
+  lp.frequency.value = 3200; env(g, t, 0.006, vel, 1.6); g.connect(lp); lp.connect(master);
+  for (const [h, a] of [[1, 1], [2, 0.5], [3, 0.25], [4, 0.12]]) {
+    const o = actx.createOscillator(), og = actx.createGain();
+    o.frequency.value = f * h; og.gain.value = a; o.connect(og); og.connect(g); o.start(t); o.stop(t + 1.7);
+  }
+}
+function tone(freqs, dur = 1.4, level = 0.12, when = 0) {
+  audio();
+  const t = Math.max(actx.currentTime, when) + 0.01;
+  for (const f of [].concat(freqs)) {
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.frequency.value = f; g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(level, t + 0.04);
+    g.gain.setValueAtTime(level, t + dur - 0.15); g.gain.linearRampToValueAtTime(0, t + dur);
+    o.connect(g); g.connect(master); o.start(t); o.stop(t + dur + 0.05);
+  }
+}
+function pad(c, when, dur) {
+  const base = 55 + ((c.root - 7 + 12) % 12); // voiced between G3 and F#4
+  c.pcs.forEach((pc, i) => {
+    let m = 55 + ((pc - 55 % 12 + 12) % 12); if (m < base) m += 12; if (i === 0) m = base;
+    for (const det of [-6, 6]) {
+      const o = actx.createOscillator(), g = actx.createGain(), lp = actx.createBiquadFilter();
+      o.type = 'sawtooth'; o.frequency.value = hz(m); o.detune.value = det; lp.frequency.value = 1100;
+      g.gain.setValueAtTime(0, when); g.gain.linearRampToValueAtTime(0.018, when + 0.25);
+      g.gain.setValueAtTime(0.018, when + dur - 0.3); g.gain.linearRampToValueAtTime(0, when + dur);
+      o.connect(lp); lp.connect(g); g.connect(master); o.start(when); o.stop(when + dur + 0.05);
+    }
+  });
+  const b = 36 + c.root, o = actx.createOscillator(), g = actx.createGain();
+  o.type = 'triangle'; o.frequency.value = hz(b); env(g, when, 0.01, 0.2, Math.min(dur, 2.4));
+  o.connect(g); g.connect(master); o.start(when); o.stop(when + dur);
+}
+function click(when, accent, level = 1) {
+  const o = actx.createOscillator(), g = actx.createGain();
+  o.frequency.value = accent ? 1760 : 1250; env(g, when, 0.002, (accent ? 0.12 : 0.06) * level, 0.06);
+  o.connect(g); g.connect(master); o.start(when); o.stop(when + 0.1);
+}
+function tanpura(m, when) {
+  const o = actx.createOscillator(), g = actx.createGain(), lp = actx.createBiquadFilter();
+  o.type = 'sawtooth'; o.frequency.value = hz(m); lp.frequency.value = 1400; lp.Q.value = 3;
+  env(g, when, 0.03, 0.05, 3.6); o.connect(lp); lp.connect(g); g.connect(master); o.start(when); o.stop(when + 3.8);
+}
+
+// ---- the backing: a drone, a pulse or a chord loop, scheduled a little ahead
+const clock = { id: null, b: null, bpm: 80, t0: 0, beat: 0, timer: 0, pending: false };
+let chordNow = null, droneTimer = 0, droneOwn = false;
+const spb = () => 60 / clock.bpm;
+function backingStart(id, bpm) {
+  backingStop();
+  if (!id || !BACKINGS[id]) return;
+  clock.id = id; clock.b = BACKINGS[id]; clock.bpm = bpm || clock.b.bpm || 80;
+  if (clock.b.kind === 'drone') { droneOn(); return; }
+  if (!gestured) { clock.pending = true; return; }
+  audio();
+  clock.t0 = actx.currentTime + 0.25; clock.beat = 0;
+  clock.timer = setInterval(schedule, 25); schedule();
+}
+function backingStop() {
+  clearInterval(clock.timer); clock.timer = 0; clock.pending = false;
+  if (clock.b && clock.b.kind === 'drone') droneOff();
+  clock.id = null; clock.b = null; chordNow = null;
+}
+function schedule() {
+  if (!clock.b || actx.state !== 'running') return;
+  const b = clock.b, ahead = actx.currentTime + 0.15;
+  while (clock.t0 + clock.beat * spb() < ahead) {
+    const i = clock.beat, t = clock.t0 + i * spb();
+    click(t, i % 4 === 0, b.kind === 'chords' ? 0.6 : 1);
+    if (b.kind === 'chords' && i % b.beats === 0) {
+      const c = b.prog[(i / b.beats) % b.prog.length];
+      pad(c, t, b.beats * spb());
+      setTimeout(() => { if (clock.b === b) { chordNow = c; onChord(); } }, Math.max(0, (t - actx.currentTime) * 1000));
+    }
+    clock.beat++;
+  }
+}
+function beatOf(tp) { // performance seconds -> beats since the backing started
+  if (!actx || !clock.timer) return NaN;
+  const ta = tp - (performance.now() / 1000 - actx.currentTime);
+  return (ta - clock.t0) / spb();
+}
+function chordAtTime(tp) {
+  if (!clock.b || clock.b.kind !== 'chords') return null;
+  const bt = beatOf(tp);
+  if (!(bt >= 0)) return null;
+  return clock.b.prog[Math.floor(bt / clock.b.beats) % clock.b.prog.length];
+}
+function droneOn() {
+  if (midiOut) { sendCC(22, 127); droneOwn = false; return; }
+  if (!gestured) { clock.pending = true; return; }
+  if (droneTimer) return;
+  audio(); droneOwn = true;
+  let i = 0;
+  const tick = () => {
+    if (actx.state !== 'running') return;
+    const sa = 48 + SA - (SA > 6 ? 12 : 0);
+    tanpura([sa - 5, sa, sa, sa - 12][i++ % 4], actx.currentTime + 0.02);
+  };
+  tick(); droneTimer = setInterval(tick, 1000);
+}
+function droneOff() {
+  if (midiOut) sendCC(22, 0);
+  clearInterval(droneTimer); droneTimer = 0; droneOwn = false;
+}
+function onGesture() {
+  if (gestured) return;
+  gestured = true; audio();
+  if (clock.pending && clock.id) backingStart(clock.id, clock.bpm);
+}
+addEventListener('pointerdown', onGesture);
+addEventListener('keydown', onGesture);
+
+// ================================================================== the FM-1 over MIDI
+let midiOut = null, midiIn = null, fm1Mode = 'sarod';
+const sent = {};
+const cc = (n, v) => midiOut && midiOut.send([0xb0, n, v]);
+function sendCC(n, v, force) { if (!midiOut) return; if (!force && sent[n] === v) return; sent[n] = v; cc(n, v); }
 async function connect(ask) {
   if (!navigator.requestMIDIAccess) { setConn(false, 'This browser has no MIDI: use Chrome or Edge'); return; }
   try {
@@ -355,7 +806,11 @@ async function connect(ask) {
       midiIn = pick(access.inputs); midiOut = pick(access.outputs);
       if (midiIn) midiIn.onmidimessage = onMidi;
       setConn(!!midiIn, midiIn ? `FM-1 connected (${midiIn.name})` : 'Chrome sees no MIDI device. Plug the FM-1 in with a data cable, then press Connect again.');
-      if (midiOut) { cc(20, 0); applySetup(true); sentLights = ''; sendLights(); }
+      if (midiOut) {
+        for (const k in sent) delete sent[k];
+        if (droneTimer) { clearInterval(droneTimer); droneTimer = 0; }
+        syncFM1(true); sentLights = ''; sendLights();
+      }
     };
     access.onstatechange = hook;
     hook();
@@ -364,216 +819,881 @@ async function connect(ask) {
   }
 }
 function setConn(on, text) { $('dot').classList.toggle('on', on); $('connText').textContent = text; $('connect').hidden = on; }
-const cc = (n, v) => midiOut && midiOut.send([0xb0, n, v]);
 function onMidi(e) {
-  const [st, d1, d2] = e.data;
-  if ((st & 0xf0) === 0x90 && d2 > 0) noteOn(d1, 'you');
-  else if ((st & 0xf0) === 0x80 || ((st & 0xf0) === 0x90 && d2 === 0)) noteOff(d1);
+  const [st, d1, d2] = e.data, t = tnow();
+  if ((st & 0xf0) === 0x90 && d2 > 0) noteOn(d1, 'fm1', t);
+  else if ((st & 0xf0) === 0x80 || ((st & 0xf0) === 0x90 && d2 === 0)) noteOff(d1, t);
+  else if ((st & 0xf0) === 0xb0) { // the FM-1 tells us what you changed on it
+    sent[d1] = d2;
+    if (d1 === 20) { SA = d2 % 12; }
+    if (d1 === 21 && d2 < 10) { scaleOverride = d2; $('scaleSel').value = String(d2); }
+    if (d1 === 23) { fm1Mode = d2 >= 64 ? 'chord' : 'sarod'; }
+    drawAll();
+  }
 }
-function applySetup(full) {
-  // a step with its own setup sends it; a jump (a unit picked, Back, a fresh connection) sends the whole
-  // setup so far, so the FM-1 always matches the lesson. Steps without one leave the FM-1 alone, so Learn mode
-  // stays on when a lesson asks you to use it
-  const own = step().setup;
-  if (!midiOut || (!own && !full)) return;
-  let cfg = {};
-  for (let i = 0; i <= s; i++) Object.assign(cfg, UNITS[u].steps[i].setup || {});
-  if (own) cc(24, 0);
-  if (cfg.thaat !== undefined) cc(21, cfg.thaat);
-  if (cfg.drone !== undefined) cc(22, cfg.drone ? 127 : 0);
-  if (cfg.chord !== undefined) cc(23, cfg.chord ? 127 : 0);
+function syncFM1(full) {
+  if (!midiOut) return;
+  const st = view === 'unit' ? step() : {}, cfg = view === 'unit' ? accSetup() : {}, sc = currentScale();
+  if (view === 'unit' && st.setup) sendCC(24, 0, true);
+  sendCC(20, SA, full);
+  sendCC(21, sc >= 0 ? SCALES[sc].fm1 : 0, full);
+  const chordMode = !!cfg.chord;
+  sendCC(23, chordMode ? 127 : 0, full);
+  fm1Mode = chordMode ? 'chord' : 'sarod';
+  const droneWanted = clock.b && clock.b.kind === 'drone';
+  sendCC(22, droneWanted ? 127 : 0, full);
 }
 
-// ------------------------------------------------------------------ a little sound for the on-screen piano and demos without an FM-1
-let actx = null;
-function pluck(m) {
-  try {
-    actx = actx || new AudioContext();
-    const t = actx.currentTime, f = 440 * 2 ** ((m - 69) / 12), g = actx.createGain();
-    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.25, t + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.6);
-    g.connect(actx.destination);
-    for (const [h, a] of [[1, 1], [2, 0.5], [3, 0.25], [4, 0.12]]) {
-      const o = actx.createOscillator(), og = actx.createGain();
-      o.frequency.value = f * h; og.gain.value = a; o.connect(og); og.connect(g); o.start(t); o.stop(t + 1.7);
+// the FM-1's keys light like the screen: the scale (or the chord) steady, a hint blinking
+let sentLights = '';
+const maskOf = (pcs) => pcs.reduce((a, p) => a | (1 << p), 0);
+function fm1Lit() {
+  if (widget && widget.lit) return widget.lit();
+  if (task && task.lit) return task.lit();
+  const keysChord = view === 'jam' || (view === 'unit' && step().keysChord);
+  if (keysChord && chordNow) return chordNow.pcs;
+  return scaleAbs();
+}
+function sendLights() {
+  if (!midiOut) return;
+  const lit = maskOf(fm1Lit()), blink = maskOf(hintShown ? wantPcs() : []), key = `${lit},${blink}`;
+  if (key === sentLights) return;
+  sentLights = key;
+  cc(27, lit & 0x7f); cc(28, lit >> 7); cc(25, blink & 0x7f); cc(26, blink >> 7); cc(29, 127);
+}
+setInterval(() => cc(29, 127), 2000);
+addEventListener('pagehide', () => cc(29, 0));
+
+// ================================================================== the microphone: guitar, piano or voice, one note at a time
+const mic = { on: false, stream: null, an: null, buf: null, timer: 0, cur: null, curT: 0, peak: 0, cand: null, candN: 0, floor: 0.003, hist: [], attack: 0 };
+function yin(b, sr) {
+  const W = 1024, maxT = Math.min(Math.floor(sr / 65), b.length - W - 1), minT = Math.floor(sr / 1100), d = new Float32Array(maxT + 2);
+  for (let t = 1; t <= maxT + 1; t++) { let sum = 0; for (let i = 0; i < W; i++) { const x = b[i] - b[i + t]; sum += x * x; } d[t] = sum; }
+  let run = 0; d[0] = 1;
+  for (let t = 1; t <= maxT + 1; t++) { run += d[t]; d[t] = run ? (d[t] * t) / run : 1; }
+  for (let t = minT; t < maxT; t++) {
+    if (d[t] < 0.13) {
+      while (t + 1 < maxT && d[t + 1] < d[t]) t++;
+      const a = d[t - 1], c = d[t + 1], den = a - 2 * d[t] + c;
+      return sr / (t + (den ? (a - c) / (2 * den) : 0));
     }
-  } catch {}
+  }
+  return 0;
 }
-
-// ------------------------------------------------------------------ notes in
-function noteOn(m, source) {
-  lastNote = m; lastSource = source;
-  if (source !== 'fm1') held.add(m);
-  showNote(m);
-  if (source === 'demo') { drawAll(); return; }
-  judge(m);
+function micTick() {
+  const b = mic.buf; mic.an.getFloatTimeDomainData(b);
+  let e = 0; for (let i = 0; i < b.length; i++) e += b[i] * b[i];
+  const rms = Math.sqrt(e / b.length);
+  mic.floor = rms < mic.floor ? rms : mic.floor + (rms - mic.floor) * 0.003;
+  const thr = Math.max(0.008, mic.floor * 3);
+  const avg = mic.hist.length ? mic.hist.reduce((x, y) => x + y, 0) / mic.hist.length : 0;
+  mic.hist.push(rms); if (mic.hist.length > 6) mic.hist.shift();
+  if (rms > thr && rms > avg * 1.6) mic.attack = 5; else if (mic.attack) mic.attack--;
+  $('micLvl').style.transform = `scale(${1 + Math.min(rms / thr, 3) * 0.4})`;
+  const f = rms > thr ? yin(b, actx.sampleRate) : 0;
+  const mf = f ? 69 + 12 * Math.log2(f / 440) : 0, m = Math.round(mf), good = f && m >= 38 && m <= 96;
+  if (mic.cur !== null) {
+    mic.peak = Math.max(mic.peak, rms);
+    if (!good && rms < thr) { noteOff(mic.cur); mic.cur = null; mic.cand = null; return; }
+    if (rms < mic.peak * 0.22) { noteOff(mic.cur); mic.cur = null; mic.cand = null; return; }
+  }
+  if (!good || Math.abs(mf - m) > 0.35) { mic.candN = 0; return; }
+  if (m === mic.cand) mic.candN++; else { mic.cand = m; mic.candN = 1; }
+  if (mic.candN < 2) return;
+  const t = tnow() - 0.04;
+  if (mic.cur === null) {
+    if (mic.attack) { mic.cur = m; mic.curT = t; mic.peak = rms; noteOn(m, 'mic', t); }
+  } else if (m !== mic.cur) { // a new pitch without a new pluck: a slide, a hammer-on or a bend
+    noteOff(mic.cur, t); mic.cur = m; mic.curT = t; mic.peak = rms; noteOn(m, 'mic', t, true);
+  } else if (mic.attack === 5 && t - mic.curT > 0.15) { // the same note plucked again
+    noteOff(m, t); mic.curT = t; mic.peak = rms; noteOn(m, 'mic', t);
+  }
+}
+async function micToggle() {
+  if (mic.on) {
+    clearInterval(mic.timer); mic.stream.getTracks().forEach((tr) => tr.stop());
+    if (mic.cur !== null) noteOff(mic.cur);
+    mic.on = false; mic.cur = null; setMicUI(); return;
+  }
+  try {
+    onGesture(); audio();
+    mic.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: false, autoGainControl: false } });
+    const src = actx.createMediaStreamSource(mic.stream);
+    mic.an = actx.createAnalyser(); mic.an.fftSize = 2048; src.connect(mic.an);
+    mic.buf = new Float32Array(2048); mic.on = true; mic.timer = setInterval(micTick, 25);
+    lastSrc = 'mic'; setMicUI();
+  } catch (e) {
+    setMicUI('Allow the microphone to listen to your guitar or piano');
+  }
+}
+function setMicUI(msg) {
+  $('micBtn').classList.toggle('on', mic.on);
+  $('micText').textContent = msg || (mic.on ? 'Mic on: guitar, piano or voice' : 'Listen with the mic');
   drawAll();
 }
-function noteOff(m) { held.delete(m); drawAll(); }
+$('micBtn').addEventListener('click', micToggle);
 
-function judge(m) {
-  const st = step(), ex = st.expect, pc = pcOf(m);
+// ================================================================== notes in, phrases out
+function funcOf(pc, t) {
+  const c = chordAtTime(t), r = rel(pc);
+  if (c) return c.pcs.includes(pc) ? 'land' : inScale(pc) ? 'pass' : 'out';
+  if (r === 0 || r === 7) return 'land';
+  return inScale(pc) ? 'pass' : 'out';
+}
+const TONE_NAME = { 0: 'root', 3: '3rd', 4: '3rd', 7: '5th', 10: '7th', 11: '7th' };
+const toneName = (pc, c) => TONE_NAME[(pc - c.root + 12) % 12] || 'note';
+function micSuppressed(pc, t) {
+  if (demoBusy || t < demoQuietUntil) return true; // the Coach's own notes, heard through the mic
+  for (const n of held.values()) if (n.src === 'fm1' && n.pc === pc) return true; // the FM-1's speaker
+  for (let i = allNotes.length - 1; i >= 0 && t - allNotes[i].t < 0.6; i--) if (allNotes[i].src === 'fm1' && allNotes[i].pc === pc) return true;
+  return false;
+}
+function noteOn(m, src, t = tnow(), slide = false) {
+  const pc = pcOf(m);
+  if (src === 'demo') { demoHeld.add(m); lastNote = { m, pc, t, src, func: 'land' }; showNote(lastNote); drawAll(); return; }
+  if (src === 'mic' && micSuppressed(pc, t)) return;
+  lastSrc = src;
+  const legato = slide || [...held.values()].some((h) => h.src === src);
+  const n = { m, pc, t, off: null, src, legato, func: funcOf(pc, t) };
+  held.set(m, n); lastNote = n; lastAct = t;
+  weights[pc] += 0.15;
+  showNote(n);
+  if (demoBusy) { drawAll(); return; }
+  phrase.push(n); allNotes.push(n);
+  if (allNotes.length > 4000) allNotes.splice(0, 1000);
+  if (view === 'unit') {
+    const st = step();
+    if (st.expect) judge(n);
+    else if (task && task.note && !stepDone) task.note(n);
+    if (widget && widget.note) widget.note(n);
+  }
+  drawAll();
+}
+function noteOff(m, t = tnow()) {
+  if (demoHeld.delete(m)) { drawAll(); return; }
+  const n = held.get(m);
+  if (!n) return;
+  held.delete(m); n.off = t; lastAct = t;
+  weights[n.pc] += Math.min(t - n.t, 2.5);
+  drawAll();
+}
+setInterval(() => {
+  if (phrase.length && !held.size && tnow() - lastAct > 0.7) endPhrase();
+}, 100);
+function endPhrase() {
+  const p = phrase; phrase = [];
+  phrases.push(p); if (phrases.length > 400) phrases.splice(0, 100);
+  logPhrase(p);
+  if (view === 'unit' && task && task.phrase && !stepDone) task.phrase(p);
+  drawAll();
+}
+function endingText(n) {
+  const c = chordAtTime(n.t);
+  if (c) return c.pcs.includes(n.pc) ? `${LETTER[n.pc]}, the ${toneName(n.pc, c)} of ${c.name}: it lands.` : `${LETTER[n.pc]} over ${c.name}: it hangs, wanting to move.`;
+  const r = rel(n.pc);
+  return `${SARGAM[r]} (${LETTER[n.pc]}): ${ENDING[r]}`;
+}
+function logPhrase(p) {
+  const last = p[p.length - 1], items = $('log').querySelector('ol') || document.createElement('ol');
+  if (!items.parentNode) { $('log').innerHTML = ''; $('log').appendChild(items); }
+  const li = document.createElement('li');
+  li.className = last.func === 'land' ? 'landed' : '';
+  li.textContent = `${p.length} note${p.length > 1 ? 's' : ''}, ending on ${endingText(last)}`;
+  items.prepend(li);
+  while (items.children.length > 5) items.lastChild.remove();
+}
+function feedback(html, cls) { const f = $('feedback'); f.innerHTML = html; f.className = 'feedback ' + (cls || ''); }
+function finish(extra) {
+  if (stepDone) return;
+  stepDone = true;
+  const st = step();
+  feedback((st.ok || 'Yes.') + (extra ? ' ' + extra : ''), 'good');
+  $('next').disabled = false; $('hint').hidden = true;
+  drawAll();
+}
+
+// ---- the basics: notes to find (a hint only when you ask)
+function judge(n) {
+  const st = step(), ex = st.expect, pc = n.pc;
   if (!ex || stepDone) return;
+  const miss = (html) => { misses++; feedback(html + (misses >= 2 && !hintShown ? ' Stuck? Press Hint.' : ''), 'near'); };
   if (ex.any) {
-    if (ex.any.includes(pc)) { trail.add(m); finish(); } else feedback(`That is ${both(pc)}. Looking for ${ex.any.map(both).join(' or ')}.`, 'near');
+    if (ex.any.includes(pc)) { trail.add(n.m); finish(); } else miss(`That is ${both(pc)}. Not this one.`);
   } else if (ex.seq) {
     if (pc === ex.seq[seqI]) {
-      trail.add(m); seqI++; renderProgress();
+      trail.add(n.m); seqI++; renderProgress();
       if (seqI >= ex.seq.length) finish(); else feedback(`${both(pc)}, yes.`, 'good');
-    } else {
-      feedback(`That is ${both(pc)}. Next is ${both(ex.seq[seqI])}.`, 'near');
-    }
+    } else miss(`That is ${both(pc)}. Not the next one.`);
   } else if (ex.octave !== undefined) {
-    if (pc !== ex.octave) { feedback(`That is ${both(pc)}. Looking for another ${LETTER[ex.octave]}.`, 'near'); return; }
-    if (octSeen === null) { octSeen = m; trail.add(m); feedback(`${LETTER[pc]} found. Now a different ${LETTER[pc]}.`, 'good'); }
-    else if (m !== octSeen) { trail.add(m); finish(); }
+    if (pc !== ex.octave) { miss(`That is ${both(pc)}.`); return; }
+    if (octSeen === null) { octSeen = n.m; trail.add(n.m); feedback(`${LETTER[pc]} found. Now a different ${LETTER[pc]}.`, 'good'); }
+    else if (n.m !== octSeen) { trail.add(n.m); finish(); }
     else feedback(`That is the same ${LETTER[pc]}. Try one higher or lower.`, 'near');
   } else if (ex.count) {
-    played++; trail.add(m); renderProgress();
+    played++; trail.add(n.m); renderProgress();
     if (played >= ex.count) finish();
   } else if (ex.chord) {
-    const want = new Set(ex.chord), have = new Set([...held].map(pcOf));
-    if (have.size === want.size && [...want].every((p) => have.has(p))) { held.forEach((h) => trail.add(h)); finish(); }
-    else if ([...have].some((p) => !want.has(p))) feedback(`Holding ${[...have].map((p) => LETTER[p]).join(' ')}. Looking for ${ex.chord.map((p) => LETTER[p]).join(' ')}.`, 'near');
+    const want = new Set(ex.chord), have = new Set([...held.values()].map((h) => h.pc));
+    if (have.size === want.size && [...want].every((p) => have.has(p))) { held.forEach((h) => trail.add(h.m)); finish(); }
+    else if ([...have].some((p) => !want.has(p))) miss(`Holding ${[...have].map((p) => LETTER[p]).join(' ')}. Not that chord.`);
     else feedback(`${[...have].map((p) => LETTER[p]).join(' ')}... keep holding and add the rest.`, 'good');
   }
 }
-function finish() {
-  stepDone = true;
-  feedback(step().ok || 'Yes.', 'good');
-  $('next').disabled = false;
-  $('next').focus({ preventScroll: true });
+function wantPcs() {
+  if (view !== 'unit') return [];
+  const st = step();
+  if (st.show && !st.expect && !st.task) return st.show;
+  if (!hintShown || stepDone) return [];
+  if (task && task.hint) return task.hint();
+  const ex = st.expect;
+  if (!ex) return [];
+  return ex.any || ex.chord || (ex.seq ? [ex.seq[seqI]] : ex.octave !== undefined ? [ex.octave] : st.show || []);
 }
-function feedback(html, cls) { const f = $('feedback'); f.innerHTML = html; f.className = 'feedback ' + (cls || ''); }
 
-// ------------------------------------------------------------------ the names of what you play
-function showNote(m) {
-  const pc = pcOf(m), oct = Math.floor(m / 12) - 1;
+// ================================================================== the improvising tasks: they listen to how you play, not for one right note
+const scaleOrder = () => scaleRel();
+const TASKS = {
+  feel() {
+    const seen = new Set();
+    return {
+      note(n) {
+        const r = rel(n.pc);
+        feedback(`<b>${SARGAM[r]}</b> (${LETTER[n.pc]}): ${FEEL[r]}.`, '');
+        if (inScale(n.pc)) seen.add(r);
+        renderProgress();
+        if (seen.size >= scaleOrder().length) finish();
+      },
+      status: () => scaleOrder().map((r) => chip(SARG_S[r], seen.has(r))).join(''),
+    };
+  },
+  land() {
+    let home = 0, away = 0;
+    return {
+      phrase(p) {
+        const last = p[p.length - 1], r = rel(last.pc);
+        if (r === 0) { home++; feedback(`Ended on <b>Sa</b>: ${ENDING[0]}`, 'good'); } else { away++; feedback(`Ended on <b>${SARGAM[r]}</b>: ${ENDING[r]}`, ''); }
+        renderProgress();
+        if (home >= 2 && away >= 2) finish();
+      },
+      status: () => chip(`ended on Sa: ${Math.min(home, 2)} of 2`, home >= 2) + chip(`ended elsewhere: ${Math.min(away, 2)} of 2`, away >= 2),
+    };
+  },
+  unlock() {
+    const order = [7, 9, 5, 11], allowed = new Set([0, 2, 4]);
+    let count = 0, lvl = 0;
+    return {
+      lit: () => [...allowed].map(abs),
+      note(n) {
+        const r = rel(n.pc);
+        if (!allowed.has(r)) { feedback(`${SARGAM[r]} is not unlocked yet. Stay with what you have: try an idea again with a new rhythm.`, 'near'); return; }
+        count++;
+        if (count >= 12) {
+          count = 0;
+          if (lvl < order.length) {
+            const add = order[lvl++]; allowed.add(add);
+            feedback(`Unlocked <b>${SARGAM[add]}</b> (${LETTER[abs(add)]}). Use it, but do not rush to: let it arrive.`, 'good');
+          } else { finish(); return; }
+        }
+        renderProgress();
+      },
+      status: () => [0, 2, 4, 7, 9, 5, 11].map((r) => chip(SARG_S[r], allowed.has(r))).join('') + chip(`${count} of 12`, false),
+    };
+  },
+  echo() {
+    const lens = [3, 4, 5];
+    let round = 0, want = [], tries = 0;
+    const playIt = () => playNotes(want.map((m) => [m, 430]));
+    const make = () => {
+      const degs = [...scaleOrder(), ...scaleOrder().map((x) => x + 12)], base = 60 + SA - (SA > 6 ? 12 : 0);
+      let i = 0; want = [];
+      for (let k = 0; k < lens[round]; k++) {
+        want.push(base + degs[i]);
+        const steps = [-2, -1, 1, 1, 2], next = i + steps[Math.floor(Math.random() * steps.length)];
+        i = Math.max(0, Math.min(degs.length - 1, next === i ? i + 1 : next));
+      }
+      tries = 0; hintShown = false; setTimeout(playIt, 600);
+    };
+    return {
+      start: make, replay: playIt, hint: () => want.map(pcOf),
+      hintText: () => `The notes: ${want.map((m) => LETTER[pcOf(m)]).join(' ')}.`,
+      phrase(p) {
+        const got = p.slice(-want.length).map((n) => n.pc);
+        if (p.length >= want.length && got.every((pc, k) => pc === pcOf(want[k]))) {
+          round++; renderProgress();
+          if (round >= lens.length) finish(); else { feedback('Yes. The next one is longer.', 'good'); setTimeout(make, 900); }
+        } else {
+          tries++;
+          feedback(tries >= 2 ? 'Not quite. Play it again to hear it once more, or press Hint.' : `Not quite: you played ${p.map((n) => LETTER[n.pc]).join(' ')}. Listen again.`, 'near');
+        }
+      },
+      status: () => lens.map((l, k) => chip(`${l} notes`, k < round)).join(''),
+    };
+  },
+  vary() {
+    const motifs = [{ r: [0, 2, 4, 2], d: [0.6, 0.3, 0.3, 0.9] }, { r: [4, 5, 7, 4], d: [0.3, 0.3, 0.6, 0.9] }, { r: [7, 4, 2, 0], d: [0.45, 0.45, 0.3, 0.9] }];
+    let round = 0, want = [];
+    const playIt = () => playNotes(want.map((w) => [w.m, w.d * 1000]));
+    const make = () => { want = motifs[round].r.map((r, k) => ({ m: 60 + SA + r, d: motifs[round].d[k] })); setTimeout(playIt, 600); };
+    return {
+      start: make, replay: playIt,
+      phrase(p) {
+        if (p.length < want.length) { feedback(`Answer with at least ${want.length} notes.`, 'near'); return; }
+        const q = p.slice(0, want.length);
+        if (q.every((n, k) => n.pc === pcOf(want[k].m))) { feedback('That is an exact echo. Change something: keep the rhythm with new notes, or keep the shape from a new starting note.', 'near'); return; }
+        const sg = Math.sign, cw = want.slice(1).map((w, k) => sg(w.m - want[k].m)), cq = q.slice(1).map((n, k) => sg(n.m - q[k].m));
+        const shape = cw.every((v, k) => v === cq[k]);
+        const norm = (a) => { const avg = a.reduce((x, y) => x + y, 0) / a.length; return a.map((x) => x / avg); };
+        const nw = norm(want.slice(0, -1).map((w) => w.d)), nq = norm(q.slice(1).map((n, k) => n.t - q[k].t));
+        const rhythm = nw.every((v, k) => Math.abs(v - nq[k]) < 0.38);
+        const kind = shape && q[0].pc !== pcOf(want[0].m) ? 'sequence' : rhythm ? 'rhythm' : shape ? 'shape' : null;
+        if (!kind) { feedback('That is a new idea, which is great in a jam. Here, keep one thing: the rhythm, or the shape (which way each step goes).', 'near'); return; }
+        feedback({ sequence: 'Same shape from a new note: a <b>sequence</b>. Bach and blues players both live on these.', rhythm: 'Same rhythm, new notes: still recognisably the same idea. That is <b>development</b>.', shape: 'Same ups and downs: a <b>variation</b> on the idea.' }[kind], 'good');
+        round++; renderProgress();
+        if (round >= motifs.length) finish(); else setTimeout(make, 1500);
+      },
+      status: () => motifs.map((_, k) => chip(`idea ${k + 1}`, k < round)).join(''),
+    };
+  },
+  qa() {
+    let pairs = 0, asked = false;
+    return {
+      phrase(p) {
+        const r = rel(p[p.length - 1].pc);
+        if (r !== 0 && r !== 7) { asked = true; feedback(`A question: it ended on <b>${SARGAM[r]}</b>. Now answer it, ending on Sa.`, 'good'); }
+        else if (r === 0 && asked) { pairs++; asked = false; renderProgress(); if (pairs >= 3) finish(); else feedback('Question, then answer: a conversation.', 'good'); }
+        else if (r === 0) feedback('That ended at home: an answer. Ask first, by ending somewhere else.', 'near');
+        else feedback('Pa is nearly as settled as Sa, so it sounds like an answer too. End on Re, Ga, Ma, Dha or Ni to ask.', 'near');
+      },
+      status: () => [0, 1, 2].map((k) => chip(`pair ${k + 1}`, k < pairs)).join(''),
+    };
+  },
+  ask() {
+    const Q = [[0, 2, 4, 5], [7, 9, 11], [4, 5, 7, 9, 7, 5, 2]];
+    let round = 0;
+    const playIt = () => playNotes(Q[round].map((r) => [60 + SA + r, 380]));
+    return {
+      start: () => setTimeout(playIt, 600), replay: playIt,
+      phrase(p) {
+        const r = rel(p[p.length - 1].pc);
+        if (r === 0) { round++; renderProgress(); if (round >= Q.length) finish(); else { feedback('Answered. Here is another question.', 'good'); setTimeout(playIt, 900); } }
+        else feedback(`That ended on ${SARGAM[r]}: another question. Bring it home to Sa.`, 'near');
+      },
+      status: () => Q.map((_, k) => chip(`question ${k + 1}`, k < round)).join(''),
+    };
+  },
+  space() {
+    let ok = 0, lastEnd = null;
+    return {
+      note(n) {
+        if (phrase.length !== 1 || lastEnd === null) return;
+        const gap = (n.t - lastEnd) / spb();
+        if (gap >= 2) { ok++; renderProgress(); if (ok >= 6) finish(); else feedback(`${gap.toFixed(1)} beats of silence. Good.`, 'good'); }
+        else feedback(`Only ${gap.toFixed(1)} beats of rest. Wait for at least two clicks.`, 'near');
+        lastEnd = null;
+      },
+      phrase(p) {
+        if (p.length > 5) { feedback(`${p.length} notes: a long sentence. Keep it to 2 to 5, then breathe.`, 'near'); lastEnd = null; }
+        else { lastEnd = p[p.length - 1].off || p[p.length - 1].t; feedback(`${p.length} note${p.length > 1 ? 's' : ''}. Now wait two clicks.`, ''); }
+      },
+      status: () => chip(`${ok} of 6 phrases`, ok >= 6),
+    };
+  },
+  offbeat() {
+    let ok = 0;
+    return {
+      note(n) {
+        if (phrase.length !== 1) return;
+        const b = beatOf(n.t); if (!(b >= 0)) return;
+        const pos = Math.round((b % 4) * 2) / 2 % 4;
+        if (pos === 0) { feedback('That one started on beat 1. Try another beat, or between beats.', 'near'); return; }
+        ok++; renderProgress();
+        feedback(`Started on ${pos % 1 ? `the “and” after ${Math.floor(pos) + 1}` : `beat ${pos + 1}`}.`, 'good');
+        if (ok >= 3) finish();
+      },
+      status: () => chip(`${ok} of 3`, ok >= 3),
+    };
+  },
+  sam() {
+    let ok = 0;
+    return {
+      phrase(p) {
+        const b = beatOf(p[p.length - 1].t); if (!(b >= 0)) return;
+        if (Math.abs(b - Math.round(b / 4) * 4) < 0.3) { ok++; renderProgress(); if (ok >= 3) finish(); else feedback('Landed on sam.', 'good'); }
+        else feedback(`Your last note fell on beat ${Math.round(b % 4) % 4 + 1}. Aim it at the accented click.`, 'near');
+      },
+      status: () => chip(`${ok} of 3 on sam`, ok >= 3),
+    };
+  },
+  tones() {
+    let ok = 0, lastIdx = -1;
+    return {
+      note(n) {
+        const c = chordAtTime(n.t); if (!c) return;
+        const b = beatOf(n.t), idx = Math.floor(b / clock.b.beats), into = b - idx * clock.b.beats;
+        if (into > 1.25 || idx === lastIdx) return;
+        if (c.pcs.includes(n.pc)) {
+          ok++; lastIdx = idx; renderProgress();
+          if (ok >= 8) finish(); else feedback(`Landed on ${LETTER[n.pc]}, the ${toneName(n.pc, c)} of ${c.name}.`, 'good');
+        }
+      },
+      status: () => chip(`${Math.min(ok, 8)} of 8 landings`, ok >= 8),
+    };
+  },
+  penta() {
+    let count = 0, out = 0;
+    return {
+      note(n) {
+        count++; if (!inScale(n.pc)) out++;
+        renderProgress();
+        if (count >= 40) finish(out ? `(${out} of your notes were outside the five, and you probably heard which.)` : '');
+      },
+      status: () => chip(`${Math.min(count, 40)} of 40 notes`, count >= 40),
+    };
+  },
+  blue() {
+    let ok = 0, prev = null;
+    return {
+      note(n) {
+        if (prev && rel(n.pc) === 4 && rel(prev.pc) === 3 && (n.legato || n.t - prev.t < 0.35)) {
+          ok++; renderProgress(); if (ok >= 3) finish(); else feedback('E♭ into E: the blue note, bent up.', 'good');
+        }
+        prev = n;
+      },
+      status: () => chip(`${ok} of 3 blue notes`, ok >= 3),
+    };
+  },
+  slides() {
+    let ok = 0, prev = null;
+    return {
+      note(n) {
+        if (prev && n.m !== prev.m && Math.abs(n.m - prev.m) <= 5 && n.legato) {
+          ok++; renderProgress(); if (ok >= 4) finish(); else feedback(n.m > prev.m ? 'A slide up: meend.' : 'A slide down: meend.', 'good');
+        }
+        prev = n;
+      },
+      status: () => chip(`${ok} of 4 slides`, ok >= 4),
+    };
+  },
+  kan() {
+    let ok = 0, prev = null;
+    return {
+      note(n) {
+        if (prev && n.m !== prev.m && Math.abs(n.m - prev.m) <= 4 && n.t - prev.t < 0.14) {
+          ok++; renderProgress(); if (ok >= 4) finish(); else feedback('A grace note: kan.', 'good');
+          prev = null; return;
+        }
+        prev = n;
+      },
+      status: () => chip(`${ok} of 4 grace notes`, ok >= 4),
+    };
+  },
+  weight() {
+    let count = 0;
+    const top3 = () => [...weights.keys()].sort((a, b) => weights[b] - weights[a]).slice(0, 3).filter((pc) => weights[pc] > 0);
+    const check = () => {
+      const t = top3().map(rel);
+      renderProgress();
+      if (count >= 30 && t.includes(4) && t.includes(11)) finish();
+    };
+    return {
+      note() { count++; check(); }, phrase: check,
+      status: () => chip(`${Math.min(count, 30)} of 30 notes`, count >= 30) + top3().map((pc) => chip(`${SARG_S[rel(pc)]} big`, [4, 11].includes(rel(pc)))).join(''),
+    };
+  },
+  freq() {
+    const seen = new Set();
+    return {
+      note(n) {
+        for (const m of seen) if (Math.abs(m - n.m) === 12) {
+          const lo = Math.min(m, n.m), hi = Math.max(m, n.m);
+          finish(`${LETTER[pcOf(lo)]}${Math.floor(lo / 12) - 1} is ${hz(lo).toFixed(1)} Hz and ${LETTER[pcOf(hi)]}${Math.floor(hi / 12) - 1} is ${hz(hi).toFixed(1)} Hz.`);
+          return;
+        }
+        seen.add(n.m);
+      },
+    };
+  },
+  triad() {
+    let maj = false, min = false;
+    return {
+      note() {
+        const have = new Set([...held.values()].map((h) => h.pc)), is = (a) => have.size === 3 && a.every((p) => have.has(p));
+        if (is([0, 4, 7]) && !maj) { maj = true; feedback('C major: 4:5:6, straight from the harmonic series.', 'good'); }
+        if (is([0, 3, 7]) && !min) { min = true; feedback('C minor: 10:12:15. Same outer notes, the middle one a half step lower.', 'good'); }
+        renderProgress();
+        if (maj && min) finish();
+      },
+      status: () => chip('C E G', maj) + chip('C E♭ G', min),
+    };
+  },
+  count20() {
+    let count = 0;
+    return { note() { count++; renderProgress(); if (count >= 20) finish(); }, status: () => chip(`${Math.min(count, 20)} of 20 notes`, count >= 20) };
+  },
+  consonance() {
+    let count = 0;
+    return {
+      note(n) { count++; const r = rel(n.pc); feedback(`${SARGAM[r]}: ${RATIO[r]} with Sa, ${SIMPLE[r] ? 'a simple ratio: it can rest' : 'a complex ratio: it pulls'}.`, ''); renderProgress(); if (count >= 30) finish(); },
+      phrase(p) { const r = rel(p[p.length - 1].pc); if (count < 30) feedback(`That phrase ended on ${SARGAM[r]}, ${RATIO[r]}: ${SIMPLE[r] ? 'it rests' : 'it keeps the music moving'}.`, SIMPLE[r] ? 'good' : ''); },
+      status: () => chip(`${Math.min(count, 30)} of 30 notes`, count >= 30),
+    };
+  },
+};
+
+// ================================================================== Why it works: things to hear and see
+const SVGNS = 'http://www.w3.org/2000/svg';
+const el = (name, attrs, parent) => { const e = document.createElementNS(SVGNS, name); for (const k in attrs) e.setAttribute(k, attrs[k]); parent && parent.appendChild(e); return e; };
+const txt = (parent, x, y, str, attrs) => { const t = el('text', Object.assign({ x, y, 'text-anchor': 'middle' }, attrs), parent); t.textContent = str; return t; };
+function wavePath(x0, x1, cy, amp, cycles, phase = 0) {
+  let d = '';
+  for (let x = x0; x <= x1; x += 1.5) d += `${x === x0 ? 'M' : 'L'}${x.toFixed(1)} ${(cy - amp * Math.sin(phase + (2 * Math.PI * cycles * (x - x0)) / (x1 - x0))).toFixed(1)}`;
+  return d;
+}
+const C3 = 130.81, C4 = 261.63;
+const WIDGETS = {
+  octave() {
+    let last = null, svg;
+    const draw = () => {
+      svg.innerHTML = '';
+      const rows = [[1, 'C3', C3], [2, 'C4', C4], [4, 'C5', 523.25]];
+      if (last) rows.push([hz(last.m) / C3, `${LETTER[last.pc]}${Math.floor(last.m / 12) - 1}`, hz(last.m), true]);
+      rows.forEach(([cy, name, f, you], i) => {
+        const y = 30 + i * 38;
+        el('path', { d: wavePath(120, 540, y, 13, cy * 2), fill: 'none', stroke: you ? '#f5a623' : '#c9cbe8', 'stroke-width': 2 }, svg);
+        txt(svg, 58, y + 5, `${name}  ${f.toFixed(1)} Hz`, { 'font-size': 14, fill: you ? '#f5a623' : '#f4ecd8' });
+      });
+    };
+    return {
+      mount(box) {
+        box.innerHTML = '<svg viewBox="0 0 560 176"></svg><div class="wrow"><button class="btn" data-f="130.81">Play C3</button><button class="btn" data-f="261.63">C4</button><button class="btn" data-f="523.25">C5</button><button class="btn" data-all="1">All three together</button></div><p class="wnote" id="wOct">Each wave is drawn over the same stretch of time: double the frequency, double the waves.</p>';
+        svg = box.querySelector('svg'); draw();
+        box.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => tone(b.dataset.all ? [C3, C4, 523.25] : +b.dataset.f, 1.4, b.dataset.all ? 0.07 : 0.14)));
+      },
+      note(n) { last = n; draw(); $('wOct').innerHTML = `You played ${LETTER[n.pc]}${Math.floor(n.m / 12) - 1}: <b>${hz(n.m).toFixed(1)} Hz</b>, ${(hz(n.m) / C4).toFixed(3)} × middle C.`; },
+    };
+  },
+  harmonics() {
+    const NAMES = ['C3', 'C4', 'G4', 'C5', 'E5', 'G5', 'B♭5 (a little flat)', 'C6'];
+    return {
+      mount(box) {
+        box.innerHTML = '<svg viewBox="0 0 560 230"></svg><div class="wrow"><button class="btn" id="hAll">Play the whole string</button><button class="btn" id="h456">Play 4, 5 and 6 together</button></div>';
+        const svg = box.querySelector('svg');
+        for (let n = 1; n <= 8; n++) {
+          const y = 18 + (n - 1) * 26, hi = n >= 4 && n <= 6, g = el('g', { style: 'cursor:pointer' }, svg);
+          el('rect', { x: 0, y: y - 12, width: 560, height: 24, fill: 'transparent' }, g);
+          let up = '', dn = '';
+          for (let x = 0; x <= 300; x += 3) { const a = 9 * Math.sin((n * Math.PI * x) / 300); up += `${x ? 'L' : 'M'}${110 + x} ${y - a}`; dn += `${x ? 'L' : 'M'}${110 + x} ${y + a}`; }
+          el('path', { d: up, fill: 'none', stroke: hi ? '#f5a623' : '#c9cbe8', 'stroke-width': 1.6 }, g);
+          el('path', { d: dn, fill: 'none', stroke: hi ? '#f5a623' : '#c9cbe8', 'stroke-width': 1.6, opacity: 0.55 }, g);
+          txt(g, 40, y + 5, `× ${n}`, { 'font-size': 14, fill: '#a3a6d4' });
+          txt(g, 425, y + 5, `${NAMES[n - 1]}`, { 'font-size': 14, fill: hi ? '#f5a623' : '#f4ecd8', 'text-anchor': 'start' });
+          txt(g, 548, y + 5, `${(C3 * n).toFixed(0)} Hz`, { 'font-size': 13, fill: '#a3a6d4', 'text-anchor': 'end' });
+          g.addEventListener('click', () => tone(C3 * n, 1.2, 0.14));
+        }
+        el('path', { d: 'M418 88 v66', stroke: '#f5a623', 'stroke-width': 2 }, svg);
+        box.querySelector('#hAll').addEventListener('click', () => { for (let n = 1; n <= 8; n++) tone(C3 * n, 1.8, 0.11 / n); });
+        box.querySelector('#h456').addEventListener('click', () => tone([C3 * 4, C3 * 5, C3 * 6], 1.8, 0.06));
+      },
+    };
+  },
+  ratio() {
+    const INTS = [['Octave', 2, 1], ['Fifth', 3, 2], ['Fourth', 4, 3], ['Major 3rd', 5, 4], ['Minor 3rd', 6, 5], ['Whole step', 9, 8], ['Half step', 16, 15], ['Tritone', 45, 32]];
+    let svg, note;
+    const show = (k) => {
+      const [name, p, q] = INTS[k];
+      svg.innerHTML = '';
+      el('path', { d: wavePath(20, 540, 40, 18, q), fill: 'none', stroke: '#c9cbe8', 'stroke-width': 1.6 }, svg);
+      el('path', { d: wavePath(20, 540, 92, 18, p), fill: 'none', stroke: '#7fd1c7', 'stroke-width': 1.6 }, svg);
+      let d = '';
+      for (let x = 20; x <= 540; x += 1) { const f = (x - 20) / 520; d += `${x === 20 ? 'M' : 'L'}${x} ${150 - 12 * (Math.sin(2 * Math.PI * q * f) + Math.sin(2 * Math.PI * p * f))}`; }
+      el('path', { d, fill: 'none', stroke: '#f5a623', 'stroke-width': 1.6 }, svg);
+      txt(svg, 20, 16, 'lower note', { 'font-size': 12, fill: '#a3a6d4', 'text-anchor': 'start' });
+      txt(svg, 20, 68, 'upper note', { 'font-size': 12, fill: '#7fd1c7', 'text-anchor': 'start' });
+      txt(svg, 20, 122, 'together', { 'font-size': 12, fill: '#f5a623', 'text-anchor': 'start' });
+      note.innerHTML = `<b>${name}, ${p}:${q}.</b> The two waves line up again after ${q} cycle${q > 1 ? 's' : ''} of the lower note, so the pattern repeats ${q < 6 ? 'quickly: smooth' : 'only rarely: rough'}.`;
+      tone([C4, (C4 * p) / q], 1.6, 0.1);
+    };
+    return {
+      mount(box) {
+        box.innerHTML = `<svg viewBox="0 0 560 180"></svg><div class="wrow">${INTS.map((x, k) => `<button class="btn" data-k="${k}">${x[0]} ${x[1]}:${x[2]}</button>`).join('')}</div><p class="wnote"></p>`;
+        svg = box.querySelector('svg'); note = box.querySelector('.wnote');
+        box.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => { box.querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b)); show(+b.dataset.k); }));
+        note.textContent = 'Choose an interval to see its two waves, and hear them together.';
+      },
+    };
+  },
+  beats() {
+    let oscs = null, d = 3, svg, note;
+    const draw = () => {
+      svg.innerHTML = '';
+      let p = '';
+      for (let x = 0; x <= 520; x += 1) { const t = (x / 520) * 2, a = 30 * Math.abs(Math.cos(Math.PI * d * t)); p += `${x ? 'L' : 'M'}${20 + x} ${70 - a}`; }
+      for (let x = 520; x >= 0; x -= 1) { const t = (x / 520) * 2, a = 30 * Math.abs(Math.cos(Math.PI * d * t)); p += `L${20 + x} ${70 + a}`; }
+      el('path', { d: p + 'Z', fill: '#f5a62340', stroke: '#f5a623', 'stroke-width': 1 }, svg);
+      txt(svg, 20, 128, '0 s', { 'font-size': 12, fill: '#a3a6d4', 'text-anchor': 'start' });
+      txt(svg, 540, 128, '2 s', { 'font-size': 12, fill: '#a3a6d4', 'text-anchor': 'end' });
+      note.innerHTML = d ? `${C4.toFixed(2)} Hz against ${(C4 + d).toFixed(2)} Hz: <b>${d} wobble${d === 1 ? '' : 's'} a second</b>, the difference between them.` : 'Exactly the same frequency: no wobble at all. In tune.';
+    };
+    const stop = () => { if (oscs) { oscs.forEach((o) => o.stop()); oscs = null; } };
+    return {
+      mount(box) {
+        box.innerHTML = '<svg viewBox="0 0 560 136"></svg><div class="wrow"><label class="row" style="margin:0">Out of tune by <input type="range" min="0" max="8" step="0.5" value="3"> Hz</label><button class="btn">Play</button></div><p class="wnote"></p>';
+        svg = box.querySelector('svg'); note = box.querySelector('.wnote');
+        const range = box.querySelector('input'), btn = box.querySelector('button');
+        range.addEventListener('input', () => { d = +range.value; if (oscs) oscs[1].frequency.setTargetAtTime(C4 + d, actx.currentTime, 0.05); draw(); });
+        btn.addEventListener('click', () => {
+          if (oscs) { stop(); btn.textContent = 'Play'; return; }
+          audio(); const g = actx.createGain(); g.gain.value = 0.08; g.connect(master);
+          oscs = [C4, C4 + d].map((f) => { const o = actx.createOscillator(); o.frequency.value = f; o.connect(g); o.start(); return o; });
+          btn.textContent = 'Stop';
+        });
+        draw();
+      },
+      unmount: stop,
+    };
+  },
+  triads() {
+    let svg, note;
+    const SETS = { major: [[1, 'C'], [5 / 4, 'E'], [3 / 2, 'G']], minor: [[1, 'C'], [6 / 5, 'E♭'], [3 / 2, 'G']] };
+    const draw = (which) => {
+      svg.innerHTML = '';
+      ['major', 'minor'].forEach((k, j) => {
+        const x0 = 40 + j * 270;
+        txt(svg, x0 + 110, 22, k === 'major' ? 'Major  4 : 5 : 6' : 'Minor  10 : 12 : 15', { 'font-size': 15, fill: which === k ? '#f5a623' : '#f4ecd8' });
+        SETS[k].forEach(([r, name], i) => {
+          const h = 120 * (r - 0.6), x = x0 + i * 75;
+          el('rect', { x, y: 160 - h, width: 52, height: h, rx: 6, fill: which === k ? '#f5a623' : '#3d4290' }, svg);
+          txt(svg, x + 26, 176, name, { 'font-size': 14, fill: '#f4ecd8' });
+          txt(svg, x + 26, 152 - h, `${(C4 * r).toFixed(1)}`, { 'font-size': 12, fill: '#a3a6d4' });
+        });
+      });
+    };
+    return {
+      mount(box) {
+        box.innerHTML = '<svg viewBox="0 0 560 186"></svg><div class="wrow"><button class="btn" data-k="major">Hear major (pure ratios)</button><button class="btn" data-k="minor">Hear minor (pure ratios)</button></div><p class="wnote">The bars are the three frequencies in hertz. Only the middle one moves.</p>';
+        svg = box.querySelector('svg'); note = box.querySelector('.wnote'); draw(null);
+        box.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => { draw(b.dataset.k); tone(SETS[b.dataset.k].map(([r]) => C4 * r), 1.8, 0.07); }));
+      },
+      note() {
+        const have = new Set([...held.values()].map((h) => h.pc));
+        if (have.size === 3 && [0, 4, 7].every((p) => have.has(p))) draw('major');
+        if (have.size === 3 && [0, 3, 7].every((p) => have.has(p))) draw('minor');
+      },
+    };
+  },
+  fifths() {
+    const CHAIN = [5, 0, 7, 2, 9, 4, 11, 6, 1, 8, 3, 10];
+    let k = 1, svg, note;
+    const draw = () => {
+      svg.innerHTML = '';
+      const cx = 110, cy = 105, R = 80, at = (pc) => [cx + R * Math.sin((pc * Math.PI) / 6), cy - R * Math.cos((pc * Math.PI) / 6)];
+      el('circle', { cx, cy, r: R, fill: 'none', stroke: '#3d4290', 'stroke-width': 1.5 }, svg);
+      for (let i = 1; i < k; i++) { const [x1, y1] = at(CHAIN[i - 1]), [x2, y2] = at(CHAIN[i]); el('line', { x1, y1, x2, y2, stroke: '#f5a623', 'stroke-width': 1.8, opacity: 0.8 }, svg); }
+      for (let pc = 0; pc < 12; pc++) {
+        const [x, y] = at(pc), on = CHAIN.slice(0, k).includes(pc), newest = CHAIN[k - 1] === pc;
+        el('circle', { cx: x, cy: y, r: 13, fill: newest ? '#f5a623' : on ? '#f4ecd8' : '#1d2152', stroke: '#3d4290' }, svg);
+        txt(svg, x, y + 5, LETTER[pc], { 'font-size': 12, 'font-weight': 600, fill: on ? '#1d2152' : '#6d71ad' });
+      }
+      const got = CHAIN.slice(0, k).slice().sort((a, b) => a - b);
+      txt(svg, 380, 30, 'In order inside one octave', { 'font-size': 13, fill: '#a3a6d4' });
+      got.forEach((pc, i) => txt(svg, 250 + (i * 270) / Math.max(got.length - 1, 1), 64, LETTER[pc], { 'font-size': 16, 'font-weight': 600, fill: '#f4ecd8' }));
+      if (k === 7) {
+        const steps = [...got, 12].slice(1).map((v, i) => v - got[i]);
+        steps.forEach((g, i) => txt(svg, 250 + ((i + 0.5) * 270) / 6, 92, g === 1 ? 'H' : 'W', { 'font-size': 15, 'font-weight': 600, fill: g === 1 ? '#ec8da3' : '#c9cbe8' }));
+      }
+    };
+    const msg = () => {
+      if (k < 7) return `${k} note${k > 1 ? 's' : ''}: ${CHAIN.slice(0, k).map((p) => LETTER[p]).join(', ')}. Keep going.`;
+      if (k === 7) return 'Seven fifths: <b>the white keys</b>. In order, C D E F G A B, with steps W W H W W W H. The half steps fall at <b>E–F</b> and <b>B–C</b>, the two gaps the chain did not fill.';
+      if (k < 12) return `Now the black keys: ${CHAIN.slice(7, k).map((p) => LETTER[p]).join(', ')}.`;
+      return 'All twelve. One more fifth would be E♯, which should land back on F, but pure fifths overshoot by about a quarter of a half step: the <b>Pythagorean comma</b>. That gap is why pianos are tuned in equal steps.';
+    };
+    return {
+      lit: () => CHAIN.slice(0, k),
+      mount(box) {
+        box.innerHTML = '<svg viewBox="0 0 560 210"></svg><div class="wrow"><button class="btn primary" id="fAdd">Add a fifth</button><button class="btn" id="fPlay">Play them as a scale</button><button class="btn ghost" id="fReset">Start over</button></div><p class="wnote"></p>';
+        svg = box.querySelector('svg'); note = box.querySelector('.wnote');
+        const update = () => { draw(); note.innerHTML = msg(); box.querySelector('#fAdd').disabled = k >= 12; sendLights(); drawAll(); };
+        box.querySelector('#fAdd').addEventListener('click', () => { if (k < 12) { k++; const pc = CHAIN[k - 1]; pluck(55 + ((pc - 7 + 12) % 12)); } update(); });
+        box.querySelector('#fPlay').addEventListener('click', () => { const got = CHAIN.slice(0, k).slice().sort((a, b) => a - b); playNotes([...got.map((p) => 60 + p), 72].map((m) => [m, 330])); });
+        box.querySelector('#fReset').addEventListener('click', () => { k = 1; update(); });
+        update();
+      },
+    };
+  },
+  temper() {
+    const ROWS = [['Major third, C to E', 329.63, C4 * 5 / 4], ['Fifth, C to G', 392.0, C4 * 3 / 2]];
+    return {
+      mount(box) {
+        box.innerHTML = '<svg viewBox="0 0 560 130"></svg>' + ROWS.map(([name, et, pure], i) => `<div class="wrow"><span style="min-width:170px">${name}</span><button class="btn" data-i="${i}" data-w="et">Piano tuning</button><button class="btn" data-i="${i}" data-w="pure">Pure ratio</button><button class="btn" data-i="${i}" data-w="both">One, then the other</button></div>`).join('') + '<p class="wnote">Listen for the slow wobble in the piano third. The pure one is still.</p>';
+        const svg = box.querySelector('svg');
+        ROWS.forEach(([name, et, pure], i) => {
+          const cents = 1200 * Math.log2(et / pure), y = 34 + i * 54;
+          txt(svg, 20, y - 10, `${name}: piano ${et.toFixed(2)} Hz, pure ${pure.toFixed(2)} Hz`, { 'font-size': 13, fill: '#f4ecd8', 'text-anchor': 'start' });
+          el('line', { x1: 20, y1: y + 8, x2: 540, y2: y + 8, stroke: '#3d4290', 'stroke-width': 2 }, svg);
+          el('circle', { cx: 280, cy: y + 8, r: 6, fill: '#7fd1c7' }, svg);
+          el('circle', { cx: 280 + cents * 13, cy: y + 8, r: 6, fill: '#f5a623' }, svg);
+          txt(svg, 280 + cents * 13, y + 30, `${cents > 0 ? '+' : ''}${cents.toFixed(1)} cents`, { 'font-size': 12, fill: '#f5a623' });
+        });
+        box.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => {
+          const [, et, pure] = ROWS[+b.dataset.i];
+          if (b.dataset.w === 'et') tone([C4, et], 2.2, 0.09);
+          else if (b.dataset.w === 'pure') tone([C4, pure], 2.2, 0.09);
+          else { tone([C4, et], 2, 0.09); tone([C4, pure], 2, 0.09, actx.currentTime + 2.3); }
+        }));
+      },
+    };
+  },
+  string() {
+    const MARKS = [[1 / 2, 'octave', '1/2'], [2 / 3, 'fifth', '2/3'], [3 / 4, 'fourth', '3/4'], [4 / 5, 'major third', '4/5'], [5 / 6, 'minor third', '5/6']];
+    return {
+      mount(box) {
+        box.innerHTML = '<svg viewBox="0 0 560 160"></svg><p class="wnote">Click the open string or any mark to hear it. The ruler below shows where twelve equal half steps fall: closer and closer together.</p>';
+        const svg = box.querySelector('svg'), x0 = 30, x1 = 530, L = x1 - x0;
+        el('line', { x1: x0, y1: 50, x2: x1, y2: 50, stroke: '#cfc6b0', 'stroke-width': 2.5 }, svg);
+        el('rect', { x: x0 - 6, y: 38, width: 6, height: 24, fill: '#efe6d0' }, svg);
+        el('rect', { x: x1, y: 38, width: 6, height: 24, fill: '#efe6d0' }, svg);
+        const open = txt(svg, x1 + 2, 30, 'open string: C3', { 'font-size': 12, fill: '#f4ecd8', 'text-anchor': 'end', style: 'cursor:pointer' });
+        open.addEventListener('click', () => tone(C3, 1.3, 0.14));
+        MARKS.forEach(([f, name, frac], i) => {
+          const x = x1 - f * L, g = el('g', { style: 'cursor:pointer' }, svg);
+          el('circle', { cx: x, cy: 50, r: 7, fill: '#f5a623' }, g);
+          txt(g, x, 78 + (i % 2) * 14, `${frac}: ${name}`, { 'font-size': 12, fill: '#f4ecd8' });
+          g.addEventListener('click', () => tone(C3 / f, 1.3, 0.14));
+        });
+        el('line', { x1: x0, y1: 128, x2: x1, y2: 128, stroke: '#3d4290', 'stroke-width': 2 }, svg);
+        for (let n = 0; n <= 24; n++) {
+          const x = x0 + L * (1 - 2 ** (-n / 12));
+          el('line', { x1: x, y1: 120, x2: x, y2: 136, stroke: n % 12 === 0 ? '#f5a623' : '#a3a6d4', 'stroke-width': n % 12 === 0 ? 2.5 : 1.2 }, svg);
+          if (n % 12 === 0 || n === 7 || n === 19) txt(svg, x, 152, n === 0 ? 'nut' : n % 12 === 0 ? `${n} half steps` : `${n}`, { 'font-size': 11, fill: '#a3a6d4' });
+        }
+      },
+    };
+  },
+};
+
+// ================================================================== the names of what you play
+function showNote(n) {
+  const pc = n.pc, r = rel(pc), oct = Math.floor(n.m / 12) - 1;
   $('wBig').innerHTML = `${LETTER[pc]}<span class="oct">${oct}</span>`;
-  $('wSub').textContent = `${SOLFEGE[pc]}, scale degree ${DEGREE[pc]}`;
-  $('wSub2').textContent = INTERVAL[pc] + (pc ? ' above C' : '');
-  $('iBig').innerHTML = devHTML(pc);
-  $('iSub').textContent = SARGAM[pc];
-  const th = currentScale();
-  $('iSub2').textContent = th < 0 ? (MARK[pc] === 1 ? 'komal: lowered' : MARK[pc] === 2 ? 'tivra: raised' : 'shuddha: natural')
-    : THAAT[th].pcs.includes(pc) ? `in ${THAAT[th].name} thaat` : `not in ${THAAT[th].name} thaat`;
-  const pcs = [...new Set([...held].map(pcOf))];
+  $('wSub').textContent = `${SOLFEGE[r]}, degree ${DEGREE[r]}, ${INTERVAL[r]}${r ? ' above Sa' : ''}`;
+  $('wSub2').textContent = `${hz(n.m).toFixed(1)} Hz, ${RATIO[r]} with Sa`;
+  $('iBig').innerHTML = devHTML(r);
+  $('iSub').textContent = SARGAM[r];
+  $('iSub2').textContent = FEEL[r];
+  const c = n.src !== 'demo' ? chordAtTime(n.t) : null;
+  if (c) $('wSub2').textContent = c.pcs.includes(pc) ? `the ${toneName(pc, c)} of ${c.name}: a landing` : inScale(pc) ? `passing over ${c.name}` : `outside ${c.name}: tension`;
+  const pcs = [...new Set([...held.values(), ...[...demoHeld].map((m) => ({ pc: pcOf(m) }))].map((h) => h.pc))];
   if (pcs.length >= 2) {
     for (const root of pcs) {
-      const rel = pcs.map((p) => (p - root + 12) % 12).sort((a, b) => a - b);
-      const c = CHORDS.find(([sh]) => sh.length === rel.length && sh.every((v, i) => v === rel[i]));
-      if (c) {
-        $('wSub2').textContent = `chord: ${LETTER[root]} ${c[1]}`;
-        $('iSub2').textContent = `notes held: ${c[0].map((v) => SHORT[(v + root) % 12]).join(' ')}`;
+      const relp = pcs.map((p) => (p - root + 12) % 12).sort((a, b) => a - b);
+      const name = Object.keys(QUAL).find((q) => QUAL[q].length === relp.length && QUAL[q].every((v, i) => v === relp[i]));
+      if (name !== undefined) {
+        $('wSub2').textContent = `chord: ${LETTER[root]}${name === '' ? ' major' : name === 'm' ? ' minor' : name}`;
+        $('iSub2').textContent = `notes held: ${QUAL[name].map((v) => SARG_S[rel((v + root) % 12)]).join(' ')}`;
         break;
       }
     }
   }
 }
-function lessonScale() {
-  let sc = UNITS[u].scale !== undefined ? UNITS[u].scale : 0;
-  for (let i = 0; i <= s; i++) {
-    const st = UNITS[u].steps[i];
-    if (st.setup && st.setup.thaat !== undefined) sc = st.setup.thaat;
-    if (st.scale !== undefined) sc = st.scale;
-  }
-  return sc;
-}
-const currentScale = () => (scaleOverride !== null ? scaleOverride : lessonScale());
-const scalePcs = () => { const sc = currentScale(); return sc < 0 ? null : THAAT[sc].pcs; };
 
-// ------------------------------------------------------------------ drawing: mala, piano, guitar
-// One colour language on all three: ivory = in the scale, dim = left out, marigold = what you play,
-// light marigold = played in this step, rose ring = what the lesson wants, a marigold bar or ring = home (Sa)
-const SVGNS = 'http://www.w3.org/2000/svg';
-const el = (name, attrs, parent) => { const e = document.createElementNS(SVGNS, name); for (const k in attrs) e.setAttribute(k, attrs[k]); parent && parent.appendChild(e); return e; };
-const txt = (parent, x, y, str, attrs) => { const t = el('text', Object.assign({ x, y, 'text-anchor': 'middle' }, attrs), parent); t.textContent = str; return t; };
-function wantPcs() { const st = step(); if (stepDone && st.expect) return []; return st.show && !st.expect ? st.show : (st.expect && (st.expect.any || st.expect.chord || (st.expect.seq ? [st.expect.seq[seqI]] : st.expect.octave !== undefined ? [st.expect.octave] : null))) || st.show || []; }
-const keyLabel = (pc) => (labelMode === 'degrees' ? [DEGREE[pc]] : labelMode === 'solfege' ? [SOLFEGE[pc]] : [LETTER[pc], SHORT[pc]]);
-const isPlaying = (m) => held.has(m) || m === lastNote;
-// the komal underline and tivra tick under a sargam label, as on the FM-1's screen
-function sargamMark(svg, pc, x, y, color) {
+// ================================================================== drawing: mala, piano, sarod, guitar
+const keyLabel = (pc) => { const r = rel(pc); return labelMode === 'degrees' ? [DEGREE[r]] : labelMode === 'solfege' ? [SOLFEGE[r]] : [LETTER[pc], SHORT[r]]; };
+const playingSet = () => new Set([...held.keys(), ...demoHeld]);
+function colourOf(m) {
+  const n = held.get(m);
+  if (n) return FUNC_COL[n.func];
+  if (demoHeld.has(m)) return '#f5a623';
+  if (lastNote && lastNote.m === m) return lastNote.src === 'demo' ? '#f5a623' : FUNC_COL[lastNote.func];
+  return null;
+}
+function litSet() { if (widget && widget.lit) return new Set(widget.lit()); if (task && task.lit) return new Set(task.lit()); return new Set(scaleAbs()); }
+function sargamMark(svg, r, x, y, color) {
   if (labelMode !== 'names') return;
-  if (MARK[pc] === 1) el('line', { x1: x - 8, y1: y + 3, x2: x + 8, y2: y + 3, stroke: color, 'stroke-width': 1.6 }, svg);
-  if (MARK[pc] === 2) el('line', { x1: x, y1: y - 13, x2: x, y2: y - 9, stroke: color, 'stroke-width': 1.6 }, svg);
+  if (MARK[r] === 1) el('line', { x1: x - 8, y1: y + 3, x2: x + 8, y2: y + 3, stroke: color, 'stroke-width': 1.6 }, svg);
+  if (MARK[r] === 2) el('line', { x1: x, y1: y - 13, x2: x, y2: y - 9, stroke: color, 'stroke-width': 1.6 }, svg);
 }
-
 function drawMala() {
   const svg = $('mala'); svg.innerHTML = '';
-  const cx = 150, cy = 150, R = 108, scale = scalePcs(), want = wantPcs();
-  const heldPcs = new Set([...held].map(pcOf)), last = lastNote !== null ? pcOf(lastNote) : -1, trailPcs = new Set([...trail].map(pcOf));
+  const cx = 150, cy = 150, R = 108, lit = litSet(), want = wantPcs(), play = playingSet(), wmax = Math.max(...weights, 0.001);
+  const playPcs = new Map(); for (const m of play) playPcs.set(pcOf(m), colourOf(m));
+  if (lastNote && !playPcs.has(lastNote.pc)) playPcs.set(lastNote.pc, colourOf(lastNote.m));
+  const trailPcs = new Set([...trail].map(pcOf));
   el('circle', { cx, cy, r: R, fill: 'none', stroke: '#3d4290', 'stroke-width': 2 }, svg);
-  const glow = el('radialGradient', { id: 'g' }, el('defs', {}, svg));
-  el('stop', { offset: '0', 'stop-color': '#f5a623', 'stop-opacity': 0.75 }, glow); el('stop', { offset: '1', 'stop-color': '#f5a623', 'stop-opacity': 0 }, glow);
-  const at = (p, r) => [cx + r * Math.sin(p * Math.PI / 6), cy - r * Math.cos(p * Math.PI / 6)];
-  // the scale's shape: a faint thread through its beads
-  if (scale) el('polygon', { points: scale.map((p) => at(p, R).join(',')).join(' '), fill: '#f4ecd80a', stroke: '#f4ecd830', 'stroke-width': 1.5 }, svg);
-  const hp = [...heldPcs].sort((a, b) => a - b);
-  if (hp.length >= 2) el('polygon', { points: hp.map((p) => at(p, R).join(',')).join(' '), fill: '#f5a62318', stroke: '#f5a623', 'stroke-width': 2.5, 'stroke-linejoin': 'round' }, svg);
-  for (let p = 0; p < 12; p++) {
-    const [x, y] = at(p, R), [lx, ly] = at(p, R + 30);
-    const lit = heldPcs.has(p) || p === last, inS = !scale || scale.includes(p), tr = trailPcs.has(p);
-    if (lit) el('circle', { cx: x, cy: y, r: 34, fill: 'url(#g)' }, svg);
-    if (want.includes(p)) el('circle', { cx: x, cy: y, r: 24, fill: 'none', stroke: '#ec8da3', 'stroke-width': 3 }, svg);
-    const fill = lit ? '#f5a623' : tr ? '#f6c46e' : inS ? '#f4ecd8' : '#1d2152';
-    el('circle', { cx: x, cy: y, r: 18, fill, stroke: p === 0 && !lit ? '#f5a623' : inS ? 'none' : '#3d4290', 'stroke-width': p === 0 ? 3.5 : 1.5 }, svg);
-    const ink = lit || tr || inS ? '#1d2152' : '#8a8dc4';
-    txt(svg, x, y + 7, DEV[p], { 'font-size': 19, 'font-weight': 600, fill: ink });
-    if (MARK[p] === 1) el('line', { x1: x - 7, y1: y + 12, x2: x + 7, y2: y + 12, stroke: ink, 'stroke-width': 2 }, svg);
-    if (MARK[p] === 2) el('line', { x1: x, y1: y - 15, x2: x, y2: y - 9, stroke: ink, 'stroke-width': 2 }, svg);
-    txt(svg, lx, ly + 5, keyLabel(p)[0], { 'font-size': 14, fill: lit ? '#f4ecd8' : inS ? '#c9cbe8' : '#6d71ad' });
+  const at = (r, rad) => [cx + rad * Math.sin((r * Math.PI) / 6), cy - rad * Math.cos((r * Math.PI) / 6)];
+  const litRel = [...lit].map(rel).sort((a, b) => a - b);
+  if (litRel.length > 2 && litRel.length < 12) el('polygon', { points: litRel.map((r) => at(r, R).join(',')).join(' '), fill: '#f4ecd80a', stroke: '#f4ecd830', 'stroke-width': 1.5 }, svg);
+  if (chordNow) el('polygon', { points: chordNow.pcs.map(rel).sort((a, b) => a - b).map((r) => at(r, R).join(',')).join(' '), fill: '#f5a62314', stroke: '#f5a623', 'stroke-width': 1.5, 'stroke-dasharray': '5 4' }, svg);
+  const hp = [...new Set([...held.values()].map((h) => rel(h.pc)))].sort((a, b) => a - b);
+  if (hp.length >= 2) el('polygon', { points: hp.map((r) => at(r, R).join(',')).join(' '), fill: '#f5a62318', stroke: '#f5a623', 'stroke-width': 2.5, 'stroke-linejoin': 'round' }, svg);
+  for (let r = 0; r < 12; r++) {
+    const pc = abs(r), [x, y] = at(r, R), [lx, ly] = at(r, R + 30), col = playPcs.get(pc), inS = lit.has(pc), w = weights[pc] / wmax;
+    if (w > 0.02) el('circle', { cx: x, cy: y, r: 19 + 15 * w, fill: '#f5a623', opacity: 0.12 + 0.12 * w }, svg);
+    if (want.includes(pc)) el('circle', { cx: x, cy: y, r: 24, fill: 'none', stroke: '#ec8da3', 'stroke-width': 3 }, svg);
+    if (chordNow && chordNow.pcs.includes(pc)) el('circle', { cx: x, cy: y, r: 22, fill: 'none', stroke: '#f5a623', 'stroke-width': 2 }, svg);
+    const fill = col || (trailPcs.has(pc) ? '#f6c46e' : inS ? '#f4ecd8' : '#1d2152');
+    el('circle', { cx: x, cy: y, r: 18, fill, stroke: r === 0 && !col ? '#f5a623' : inS ? 'none' : '#3d4290', 'stroke-width': r === 0 ? 3.5 : 1.5 }, svg);
+    const ink = col || trailPcs.has(pc) || inS ? '#1d2152' : '#8a8dc4';
+    txt(svg, x, y + 7, DEV[r], { 'font-size': 19, 'font-weight': 600, fill: ink });
+    if (MARK[r] === 1) el('line', { x1: x - 7, y1: y + 12, x2: x + 7, y2: y + 12, stroke: ink, 'stroke-width': 2 }, svg);
+    if (MARK[r] === 2) el('line', { x1: x, y1: y - 15, x2: x, y2: y - 9, stroke: ink, 'stroke-width': 2 }, svg);
+    txt(svg, lx, ly + 5, keyLabel(pc)[0], { 'font-size': 14, fill: col ? '#f4ecd8' : inS ? '#c9cbe8' : '#6d71ad' });
   }
-  txt(svg, cx, cy + 8, last >= 0 ? `${LETTER[last]} = ${SARGAM[last]}` : 'Sa = C', { 'font-size': 22, 'font-weight': 600, fill: '#f4ecd8' });
+  txt(svg, cx, cy + 8, lastNote ? `${LETTER[lastNote.pc]} = ${SARGAM[rel(lastNote.pc)]}` : `Sa = ${LETTER[SA]}`, { 'font-size': 21, 'font-weight': 600, fill: '#f4ecd8' });
 }
-
-const PIANO_LO = 48, PIANO_HI = 84; // C3 .. C6
+const PIANO_LO = 48, PIANO_HI = 84;
 const BLACK = [1, 3, 6, 8, 10], isBlack = (m) => BLACK.includes(pcOf(m));
 function drawPiano() {
   const svg = $('piano'), W = 30, H = 136, BH = 86, whites = [], xOf = {};
   for (let m = PIANO_LO; m <= PIANO_HI; m++) if (!isBlack(m)) whites.push(m);
   whites.forEach((m, i) => { xOf[m] = i * W + W / 2 + 1; });
   for (let m = PIANO_LO; m <= PIANO_HI; m++) if (isBlack(m)) xOf[m] = xOf[m - 1] + W / 2;
-  const scale = scalePcs(), want = wantPcs(), width = whites.length * W, strip = scale ? 40 : 6;
-  svg.setAttribute('viewBox', `0 0 ${width + 2} ${H + strip}`); svg.innerHTML = '';
-  const inS = (m) => !scale || scale.includes(pcOf(m));
+  const lit = litSet(), all = lit.size === 12, want = wantPcs(), sc = currentScale(), strip = !all && !(widget && widget.lit) && !(task && task.lit) && sc >= 0;
+  svg.setAttribute('viewBox', `0 0 ${whites.length * W + 2} ${H + (strip ? 40 : 6)}`); svg.innerHTML = '';
   const draw = (m, black) => {
-    const pc = pcOf(m), w = black ? W * 0.64 : W - 2, h = black ? BH : H, x = black ? xOf[m] - w / 2 : xOf[m] - w / 2;
-    const play = isPlaying(m), tr = trail.has(m), sc = inS(m);
-    const fill = play ? '#f5a623' : tr ? '#f6c46e' : black ? (sc && scale ? '#5d64c4' : '#14173a') : sc ? '#f4ecd8' : '#6f739c';
-    const r = el('rect', { x, y: 1, width: w, height: h, rx: black ? 3 : 4, fill, stroke: black ? '#0b0d26' : '#0f1233', 'stroke-width': 1, 'data-m': m }, svg);
-    r.style.cursor = 'pointer';
-    if (pc === 0) el('rect', { x: x + 3, y: h - 6, width: w - 6, height: 4, rx: 2, fill: play ? '#1d2152' : '#f5a623', 'pointer-events': 'none' }, svg);
+    const pc = pcOf(m), w = black ? W * 0.64 : W - 2, h = black ? BH : H, x = xOf[m] - w / 2;
+    const col = colourOf(m), tr = trail.has(m), on = lit.has(pc);
+    const fill = col || (tr ? '#f6c46e' : black ? (on && !all ? '#5d64c4' : '#14173a') : on ? '#f4ecd8' : '#6f739c');
+    const k = el('rect', { x, y: 1, width: w, height: h, rx: black ? 3 : 4, fill, stroke: black ? '#0b0d26' : '#0f1233', 'data-m': m }, svg);
+    k.style.cursor = 'pointer';
+    if (pc === SA) el('rect', { x: x + 3, y: h - 6, width: w - 6, height: 4, rx: 2, fill: col ? '#1d2152' : '#f5a623', 'pointer-events': 'none' }, svg);
+    if (chordNow && chordNow.pcs.includes(pc)) el('circle', { cx: xOf[m], cy: 9, r: 3.5, fill: '#f5a623', 'pointer-events': 'none' }, svg);
     if (want.includes(pc)) el('rect', { x: x + 3, y: h - (black ? 40 : 52), width: w - 6, height: black ? 32 : 42, rx: 6, fill: 'none', stroke: '#ec8da3', 'stroke-width': 3, 'pointer-events': 'none' }, svg);
-    // names only on the scale's keys (and on anything you play), so the scale reads at a glance
-    if (sc || play || tr || want.includes(pc)) {
-      const lab = keyLabel(pc), ink = play || tr || !black ? '#1d2152' : '#f4ecd8';
-      const y1 = black ? BH - (lab.length > 1 ? 26 : 14) : H - (lab.length > 1 ? 32 : 18), fs = black ? 10 : 12;
+    if (on || col || tr || want.includes(pc)) {
+      const lab = keyLabel(pc), ink = col || tr || !black ? '#1d2152' : '#f4ecd8', fs = black ? 10 : 12;
+      const y1 = black ? BH - (lab.length > 1 ? 26 : 14) : H - (lab.length > 1 ? 32 : 18);
       lab.forEach((t, i) => {
-        const tt = txt(svg, xOf[m], y1 + i * (fs + 3), t, { 'font-size': fs, 'font-weight': i === 0 ? 600 : 500, fill: ink, 'pointer-events': 'none' });
-        if (i === 1 || (labelMode === 'names' && lab.length === 1)) sargamMark(svg, pc, xOf[m], y1 + i * (fs + 3), ink);
-        return tt;
+        txt(svg, xOf[m], y1 + i * (fs + 3), t, { 'font-size': fs, 'font-weight': i === 0 ? 600 : 500, fill: ink, 'pointer-events': 'none' });
+        if (i === 1) sargamMark(svg, rel(pc), xOf[m], y1 + i * (fs + 3), ink);
       });
     }
   };
   whites.forEach((m) => draw(m, false));
   for (let m = PIANO_LO; m <= PIANO_HI; m++) if (isBlack(m)) draw(m, true);
-  // the scale's steps, drawn once under the middle octave: W = whole step, H = half step
-  if (scale) {
-    const base = 60, pcs = [...scale, 12];
+  if (strip) { // the scale's steps under the middle octave: W whole, H half
+    const base = 60 + SA - (SA > 6 ? 12 : 0), pcs = [...SCALES[sc].pcs, 12];
     for (let i = 0; i < pcs.length - 1; i++) {
-      const a = base + pcs[i], b = base + pcs[i + 1], gap = pcs[i + 1] - pcs[i], x1 = xOf[a] + 3, x2 = xOf[b] - 3, y = H + 9;
-      const col = gap === 1 ? '#ec8da3' : gap === 2 ? '#c9cbe8' : '#f5a623';
+      const a = base + pcs[i], b = base + pcs[i + 1], gap = pcs[i + 1] - pcs[i];
+      if (xOf[a] === undefined || xOf[b] === undefined) continue;
+      const x1 = xOf[a] + 3, x2 = xOf[b] - 3, y = H + 9, col = gap === 1 ? '#ec8da3' : gap === 2 ? '#c9cbe8' : '#f5a623';
       el('path', { d: `M${x1} ${y - 4} Q${(x1 + x2) / 2} ${y + 8} ${x2} ${y - 4}`, fill: 'none', stroke: col, 'stroke-width': 1.8 }, svg);
-      txt(svg, (x1 + x2) / 2, y + 22, gap === 1 ? 'H' : gap === 2 ? 'W' : 'W+H', { 'font-size': 13, 'font-weight': 600, fill: col });
+      txt(svg, (x1 + x2) / 2, y + 22, gap === 1 ? 'H' : gap === 2 ? 'W' : gap === 3 ? 'W+H' : `${gap}H`, { 'font-size': 13, 'font-weight': 600, fill: col });
     }
   }
 }
-
-const STRINGS = [64, 59, 55, 50, 45, 40]; // high E at the top of the picture, as on a chord chart
-function drawGuitar() {
-  const svg = $('guitar'), F = 12, fw = 52, sh = 22, x0 = 48, y0 = 14, w = x0 + fw * F + 12, h = y0 + sh * 5 + 30;
+function instNow() {
+  if (instMode !== 'auto') return instMode;
+  if (view === 'unit' && acc('inst', null)) return acc('inst', null);
+  if (lastSrc === 'mic') return 'guitar';
+  return fm1Mode === 'chord' ? 'guitar' : 'sarod';
+}
+const STRINGS = [64, 59, 55, 50, 45, 40];
+function drawGuitar(svg) {
+  const F = 12, fw = 52, sh = 22, x0 = 48, y0 = 14, w = x0 + fw * F + 12, h = y0 + sh * 5 + 30;
   svg.setAttribute('viewBox', `0 0 ${w} ${h}`); svg.innerHTML = '';
-  const want = wantPcs(), scale = scalePcs();
+  const want = wantPcs(), lit = litSet(), all = lit.size === 12, pos = view === 'unit' ? acc('position', null) : null;
   el('rect', { x: x0, y: y0 - 8, width: fw * F, height: sh * 5 + 16, fill: '#2a1d14', rx: 4 }, svg);
+  if (pos) el('rect', { x: x0 + (pos[0] - 1) * fw, y: y0 - 10, width: (pos[1] - pos[0] + 1) * fw, height: sh * 5 + 20, fill: '#f5a6231c', stroke: '#f5a623', 'stroke-dasharray': '5 4', rx: 6 }, svg);
   el('rect', { x: x0 - 3, y: y0 - 8, width: 5, height: sh * 5 + 16, fill: '#efe6d0' }, svg);
   for (let f = 1; f <= F; f++) el('line', { x1: x0 + f * fw, y1: y0 - 8, x2: x0 + f * fw, y2: y0 + sh * 5 + 8, stroke: '#8a7f6a', 'stroke-width': 1.5 }, svg);
   for (const f of [3, 5, 7, 9]) el('circle', { cx: x0 + (f - 0.5) * fw, cy: y0 + sh * 2.5, r: 4, fill: '#5a4a38' }, svg);
@@ -587,66 +1707,136 @@ function drawGuitar() {
     const y = y0 + si * sh;
     for (let f = 0; f <= F; f++) {
       const m = open + f, x = f === 0 ? x0 - 19 : x0 + (f - 0.5) * fw, pc = pcOf(m);
-      const play = isPlaying(m), tr = trail.has(m), sc = scale ? scale.includes(pc) : pc === 0, target = want.includes(pc);
-      if (!(play || tr || sc || target)) continue;
-      if (target && !play) el('circle', { cx: x, cy: y, r: 11.5, fill: 'none', stroke: '#ec8da3', 'stroke-width': 2.6 }, svg);
-      const fill = play ? '#f5a623' : tr ? '#f6c46e' : sc ? '#f4ecd8' : '#2a1d14';
-      el('circle', { cx: x, cy: y, r: 9, fill, stroke: pc === 0 && !play ? '#f5a623' : 'none', 'stroke-width': 3 }, svg);
-      txt(svg, x, y + 3.5, keyLabel(pc)[0], { 'font-size': 9.5, 'font-weight': 600, fill: sc || play || tr ? '#1d2152' : '#ec8da3' });
+      const col = colourOf(m), tr = trail.has(m), on = all ? pc === SA : lit.has(pc), target = want.includes(pc);
+      if (!(col || tr || on || target)) continue;
+      if (target && !col) el('circle', { cx: x, cy: y, r: 11.5, fill: 'none', stroke: '#ec8da3', 'stroke-width': 2.6 }, svg);
+      el('circle', { cx: x, cy: y, r: 9, fill: col || (tr ? '#f6c46e' : on ? '#f4ecd8' : '#2a1d14'), stroke: pc === SA && !col ? '#f5a623' : 'none', 'stroke-width': 3 }, svg);
+      txt(svg, x, y + 3.5, keyLabel(pc)[0], { 'font-size': 9.5, 'font-weight': 600, fill: col || tr || on ? '#1d2152' : '#ec8da3' });
     }
   });
   for (const f of [3, 5, 7, 9, 12]) txt(svg, x0 + (f - 0.5) * fw, h - 4, f, { 'font-size': 12, fill: '#a3a6d4' });
 }
-
+// the sarod: four main strings on a fretless steel plate, two chikari, eleven taraf
+function drawSarod(svg) {
+  const W = 760, H = 238, nut = 74, bridge = 668, L = bridge - nut, ys = [92, 108, 124, 140];
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`); svg.innerHTML = '';
+  const defs = el('defs', {}, svg), gr = el('linearGradient', { id: 'steel', x1: 0, y1: 0, x2: 0, y2: 1 }, defs);
+  el('stop', { offset: 0, 'stop-color': '#e4e7ee' }, gr); el('stop', { offset: 1, 'stop-color': '#9aa1ae' }, gr);
+  const sa0 = 48 + SA - (SA > 6 ? 12 : 0), opens = [sa0 + 5, sa0, sa0 - 5, sa0 - 12]; // Ma, Sa, low Pa, low Sa
+  const lit = litSet(), playing = [...playingSet()], last = lastNote && !playing.includes(lastNote.m) ? [lastNote.m] : [];
+  const sounding = [...playing, ...last];
+  // the body: neck, pegbox end, the skin-covered bowl, the steel plate
+  el('path', { d: `M${nut - 46} 80 L${nut} 76 L560 68 L560 156 L${nut} 152 L${nut - 46} 148 Z`, fill: '#4a2c18' }, svg);
+  el('circle', { cx: 664, cy: 114, r: 88, fill: '#4a2c18' }, svg);
+  el('circle', { cx: 668, cy: 114, r: 73, fill: '#e9dcc0' }, svg);
+  el('path', { d: `M${nut} 80 L545 72 L545 152 L${nut} 148 Z`, fill: 'url(#steel)' }, svg);
+  el('rect', { x: nut - 5, y: 78, width: 6, height: 72, fill: '#efe6d0' }, svg);
+  el('rect', { x: bridge - 3, y: 84, width: 7, height: 62, rx: 2, fill: '#c9b48c', stroke: '#8a7350' }, svg);
+  txt(svg, 330, 16, 'No frets: the note names show where each note lies on the main string. They squeeze together toward the body.', { 'font-size': 12, fill: '#a3a6d4' });
+  // half-step marks across the plate, the scale's notes on the main string named (never two names on top of each other)
+  let lastX = -99;
+  for (let n = 1; n <= 24; n++) {
+    const x = nut + L * (1 - 2 ** (-n / 12)), pc = pcOf(opens[0] + n), on = lit.has(pc), natural = !MARK[rel(pc)];
+    el('line', { x1: x, y1: 84, x2: x, y2: 146, stroke: on ? '#5a5f70' : '#bcc1cb', 'stroke-width': on ? 1.3 : 0.8 }, svg);
+    if (on && (lit.size < 12 || natural) && x - lastX >= 17) { txt(svg, x, 46, SARG_S[rel(pc)], { 'font-size': 11.5, fill: pc === SA ? '#f5a623' : '#c9cbe8', 'font-weight': 600 }); lastX = x; }
+  }
+  // chikari: two thin high strings that start partway up the neck
+  [[332, 58], [356, 63]].forEach(([x, y]) => { el('line', { x1: x, y1: y, x2: bridge, y2: 88, stroke: '#d9d2c0', 'stroke-width': 0.8 }, svg); el('circle', { cx: x, cy: y, r: 2.6, fill: '#c9b48c' }, svg); });
+  txt(svg, 324, 63, 'chikari', { 'font-size': 11, fill: '#a3a6d4', 'text-anchor': 'end' });
+  // taraf: eleven sympathetic strings tuned to the scale, under the main ones; the ones that match your note ring
+  const sc = scaleRel(), tunes = []; for (let i = 0; tunes.length < 11; i++) tunes.push(sc[i % sc.length]);
+  const ringing = new Set(sounding.map(pcOf));
+  tunes.forEach((r, i) => {
+    const x = 150 + i * 31, y = 188 + (i % 2) * 6, ring = ringing.has(abs(r));
+    el('line', { x1: x, y1: y, x2: 636, y2: 168, stroke: ring ? '#f5a623' : '#8d8778', 'stroke-width': ring ? 1.7 : 0.6 }, svg);
+    el('circle', { cx: x, cy: y, r: 2.8, fill: ring ? '#f5a623' : '#c9b48c' }, svg);
+    txt(svg, x, y + 19, SARG_S[r], { 'font-size': 11, fill: ring ? '#f5a623' : '#8a8dc4', 'font-weight': ring ? 700 : 400 });
+  });
+  txt(svg, 134, 196, 'taraf', { 'font-size': 11, fill: '#a3a6d4', 'text-anchor': 'end' });
+  // the four main strings, and their open notes
+  const names = ['Ma', 'Sa', 'Pa', 'Sa'];
+  ys.forEach((y, i) => {
+    el('line', { x1: nut, y1: y, x2: bridge, y2: y, stroke: '#26262e', 'stroke-width': 0.9 + i * 0.45 }, svg);
+    txt(svg, nut - 52, y + 4, `${names[i]} ${LETTER[pcOf(opens[i])]}`, { 'font-size': 11, fill: '#f4ecd8', 'text-anchor': 'start' });
+  });
+  // a fingernail for each sounding note, on the string a sarodiya would use; the string rings from there to the bridge
+  sounding.forEach((m, k) => {
+    let si = opens.findIndex((o) => m >= o), mm = m;
+    if (si < 0) { while (mm < opens[3]) mm += 12; si = 3; }
+    let n = mm - opens[si];
+    while (n > 24) n -= 12;
+    const x = n === 0 ? nut + 6 : nut + L * (1 - 2 ** (-n / 12)), y = ys[si], col = colourOf(m) || '#f5a623';
+    el('line', { x1: x, y1: y, x2: bridge, y2: y, stroke: col, 'stroke-width': 2.6, opacity: 0.8 }, svg);
+    el('circle', { cx: x, cy: y, r: 7.5, fill: col, stroke: '#1d2152', 'stroke-width': 1.2 }, svg);
+    txt(svg, x, 168 + (k % 2) * 13, `${SARG_S[rel(pcOf(m))]} ${LETTER[pcOf(m)]}`, { 'font-size': 12.5, 'font-weight': 700, fill: col });
+  });
+}
+function drawInst() {
+  const which = instNow(), svg = $('inst');
+  $('instTitle').textContent = which === 'sarod' ? 'Sarod: where the fingernail goes' : 'Guitar (standard tuning, high E string at the top)';
+  if (which === 'sarod') drawSarod(svg); else drawGuitar(svg);
+}
 function describeScale() {
   const sc = currentScale(), p = $('scaleText');
-  if (sc < 0) { p.innerHTML = 'All twelve notes are lit: this is the <b>chromatic scale</b>, every half step. Indian music has the same twelve <b>swaras</b>: seven natural (shuddha), four lowered (komal) and one raised (tivra Ma).'; return; }
-  const t = THAAT[sc], pcs = t.pcs, steps = [...pcs, 12].slice(1).map((v, i) => v - pcs[i]).map((g) => (g === 1 ? 'H' : g === 2 ? 'W' : 'W+H'));
-  p.innerHTML = `<b>${t.name} thaat</b>, ${t.mode}. Notes: ${pcs.map((q) => LETTER[q]).join(' ')}, or ${pcs.map((q) => SARGAM[q]).join(', ')}. Steps: <span style="white-space:nowrap">${steps.join(' ')}</span>.`;
+  if (widget && widget.lit) { p.innerHTML = ''; return; }
+  if (sc < 0) { p.innerHTML = `All twelve notes are lit: every half step. Indian music has the same twelve swaras: seven natural (shuddha), four lowered (komal) and one raised (tivra Ma). Sa is <b>${LETTER[SA]}</b>.`; return; }
+  const t = SCALES[sc], pcs = t.pcs, steps = [...pcs, 12].slice(1).map((v, i) => v - pcs[i]).map((g) => (g === 1 ? 'H' : g === 2 ? 'W' : g === 3 ? 'W+H' : `${g}H`));
+  const ind = t.blues ? 'no Indian equivalent, though its bent note is a meend' : t.raga ? `raga ${t.name}` : `${t.name} thaat`;
+  p.innerHTML = `<b>${t.west[0].toUpperCase() + t.west.slice(1)}</b>, ${ind}, with Sa on ${LETTER[SA]}. Notes: ${pcs.map((q) => LETTER[abs(q)]).join(' ')}, or ${pcs.map((q) => SARG_S[q]).join(' ')}. Steps: <span style="white-space:nowrap">${steps.join(' ')}</span>.`;
 }
-function drawAll() { drawMala(); drawPiano(); drawGuitar(); describeScale(); sendLights(); }
-
-// the FM-1's own keys light up like the screen: the scale steady, the note the lesson wants next blinking
-let sentLights = '';
-const maskOf = (pcs) => pcs.reduce((a, p) => a | (1 << p), 0);
-function sendLights() {
-  if (!midiOut) return;
-  const lit = maskOf(scalePcs() || [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]), blink = maskOf(wantPcs()), key = `${lit},${blink}`;
-  if (key === sentLights) return;
-  sentLights = key;
-  cc(27, lit & 0x7f); cc(28, lit >> 7); cc(25, blink & 0x7f); cc(26, blink >> 7); cc(29, 127);
+let drawQueued = false;
+function drawAll() {
+  if (drawQueued) return;
+  drawQueued = true;
+  requestAnimationFrame(() => { drawQueued = false; drawMala(); drawPiano(); drawInst(); describeScale(); sendLights(); });
 }
-setInterval(() => cc(29, 127), 2000);
-addEventListener('pagehide', () => cc(29, 0));
+function onChord() {
+  drawAll();
+  if (view === 'jam') renderJamChord();
+}
 
-// ------------------------------------------------------------------ the lesson card
-function renderUnits() {
-  const box = $('units'); box.innerHTML = '';
-  UNITS.forEach((un, i) => {
+// ================================================================== the lesson card
+function renderRail() {
+  const box = $('rail'); box.innerHTML = '';
+  const section = (title) => { const h = document.createElement('h2'); h.textContent = title; box.appendChild(h); };
+  const button = (label, sub, n, cur, ok, onClick, special) => {
     const b = document.createElement('button');
-    b.className = 'unit' + (i === u ? ' cur' : '') + (done[i] ? ' done' : '');
-    b.innerHTML = `<span class="n">${done[i] ? '✓' : i + 1}</span><span class="t">${un.title}<small>${un.sub}</small></span>`;
-    b.addEventListener('click', () => { u = i; s = 0; openStep(true); });
-    box.appendChild(b);
-  });
+    b.className = 'unit' + (cur ? ' cur' : '') + (ok ? ' done' : '') + (special ? ' special' : '');
+    b.innerHTML = `<span class="n">${ok ? '✓' : n}</span><span class="t">${label}<small>${sub}</small></span>`;
+    b.addEventListener('click', onClick); box.appendChild(b);
+  };
+  const list = (p) => PATHS[p].forEach((un, i) => button(un.title, un.sub, i + 1, view === 'unit' && path === p && u === i, done[p][i], () => { path = p; u = i; s = 0; openStep(true); }));
+  section('Think and improvise'); list('imp');
+  section('Play'); button('Jam room', 'backing tracks, live feedback', '♪', view === 'jam', false, openJam, true);
+  section('Why it works'); list('why');
+  section('Two languages'); button('Dictionary', 'every term, both ways', 'अ', view === 'dict', false, openDict, true);
+  section('Basics, if you need them'); list('basic');
 }
 function renderProgress() {
-  const st = step(), box = $('progress'); box.innerHTML = '';
-  if (st.expect && st.expect.seq) st.expect.seq.forEach((pc, i) => {
-    const c = document.createElement('span'); c.className = 'chip' + (i < seqI ? ' ok' : ''); c.textContent = LETTER[pc]; box.appendChild(c);
-  });
-  if (st.expect && st.expect.count) { const c = document.createElement('span'); c.className = 'chip'; c.textContent = `${Math.min(played, st.expect.count)} of ${st.expect.count} notes`; box.appendChild(c); }
+  const st = step(), box = $('progress');
+  if (task && task.status) { box.innerHTML = task.status(); return; }
+  box.innerHTML = '';
+  if (st.expect && st.expect.seq) box.innerHTML = st.expect.seq.map((pc, i) => chip(LETTER[pc], i < seqI)).join('');
+  if (st.expect && st.expect.count) box.innerHTML = chip(`${Math.min(played, st.expect.count)} of ${st.expect.count} notes`, played >= st.expect.count);
+}
+function showView() {
+  $('lessonCard').hidden = view !== 'unit'; $('jamCard').hidden = view !== 'jam'; $('dictCard').hidden = view !== 'dict';
+}
+function resetListening() {
+  trail.clear(); phrase = []; weights.fill(0); held.forEach((n) => (n.off = tnow())); held.clear(); lastNote = null;
+  if (widget && widget.unmount) widget.unmount();
+  widget = null; task = null; $('widget').innerHTML = '';
+  $('log').innerHTML = '<p class="empty">Your phrases show up here, with where each one landed.</p>';
 }
 function openStep(full) {
-  const st = step(), un = UNITS[u];
-  stepDone = !st.expect && !st.quiz; seqI = 0; octSeen = null; played = 0; quizPicked = false;
-  trail.clear(); held.clear(); lastNote = null; scaleOverride = null; $('scaleSel').value = String(lessonScale());
-  $('unitName').textContent = `Unit ${u + 1}: ${un.title}`;
-  const pips = $('pips'); pips.innerHTML = '';
-  un.steps.forEach((_, i) => { const p = document.createElement('span'); p.className = 'pip' + (i < s ? ' done' : i === s ? ' cur' : ''); pips.appendChild(p); });
+  view = 'unit'; showView(); resetListening();
+  const st = step(), un = UNITS()[u];
+  stepDone = !st.expect && !st.quiz && !st.task; seqI = 0; octSeen = null; played = 0; misses = 0; hintShown = false;
+  SA = 0; scaleOverride = null; $('scaleSel').value = String(lessonScale());
+  $('unitName').textContent = `${PATH_NAME[path]}, ${u + 1}: ${un.title}`;
+  $('pips').innerHTML = un.steps.map((_, i) => `<span class="pip${i < s ? ' done' : i === s ? ' cur' : ''}"></span>`).join('');
   $('say').innerHTML = st.say || st.quiz || '';
   $('doit').classList.toggle('show', !!st.what); $('what').textContent = st.what || '';
-  $('demo').hidden = !st.demo;
   const q = $('quiz'); q.innerHTML = ''; q.classList.toggle('show', !!st.quiz);
   if (st.quiz) st.options.forEach(([label, right]) => {
     const b = document.createElement('button'); b.className = 'btn'; b.textContent = label;
@@ -657,79 +1847,166 @@ function openStep(full) {
     });
     q.appendChild(b);
   });
-  feedback(st.expect ? 'Listening to your FM-1...' : '', '');
-  if (st.demo && !st.expect) stepDone = false;
+  if (st.widget) { widget = WIDGETS[st.widget](); widget.mount($('widget')); }
+  if (st.task) task = TASKS[st.task](st);
+  feedback(st.expect || st.task ? (lastSrc === 'mic' && mic.on ? 'Listening through the mic...' : 'Listening...') : '', '');
+  if (st.demo && !st.expect && !st.task) stepDone = false;
+  $('demo').hidden = !(st.demo || (task && task.replay));
+  $('demo').textContent = st.demo ? 'Play it for me' : 'Play it again';
+  $('hint').hidden = !(st.expect || (task && task.hint));
   $('next').disabled = !stepDone;
-  $('next').textContent = s === un.steps.length - 1 ? (u === UNITS.length - 1 ? 'Finish' : 'Next unit') : 'Next';
+  $('next').textContent = s === un.steps.length - 1 ? (u === UNITS().length - 1 ? 'Finish' : 'Next unit') : 'Next';
   $('back').disabled = u === 0 && s === 0;
-  renderProgress(); renderUnits(); applySetup(full); drawAll(); save();
+  const backing = acc('backing', null) || (accSetup().drone ? 'drone' : null);
+  if (backing !== clock.id) backingStart(backing);
+  $('backing').hidden = !backing; $('backing').textContent = 'Stop the backing';
+  syncFM1(full);
+  if (task && task.start) task.start();
+  renderProgress(); renderRail(); drawAll(); save();
 }
-// play notes on the FM-1 (or in the browser without one); each stays lit on the keys as it goes by
-let playing = false;
 async function playNotes(list) {
-  if (playing) return; playing = true; trail.clear();
+  if (demoBusy) return;
+  demoBusy = true; phrase = [];
   for (const [m, ms] of list) {
     if (midiOut) midiOut.send([0x90, m, 96]); else pluck(m);
-    trail.add(m); noteOn(m, 'demo');
+    noteOn(m, 'demo');
     await new Promise((r) => setTimeout(r, ms));
     if (midiOut) midiOut.send([0x80, m, 0]);
-    held.delete(m);
+    noteOff(m);
   }
-  lastNote = null; playing = false; drawAll();
+  demoBusy = false; demoQuietUntil = tnow() + 0.5; lastNote = null; phrase = [];
+  drawAll();
 }
-async function playDemo() {
+$('demo').addEventListener('click', async () => {
   const st = step();
+  if (task && task.replay) { task.replay(); return; }
   $('demo').disabled = true;
   await playNotes(st.demo);
   $('demo').disabled = false;
-  if (!st.expect) { stepDone = true; $('next').disabled = false; feedback('Now you know how it sounds.', 'good'); }
-  else feedback('Your turn now.', '');
-}
-$('hearScale').addEventListener('click', () => {
-  const pcs = scalePcs() || [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], up = [...pcs.map((p) => 60 + p), 72];
-  playNotes([...up, ...up.slice(0, -1).reverse()].map((m, i, a) => [m, i === a.length - 1 || i === up.length - 1 ? 700 : 340]));
+  if (!st.expect && !st.task) { stepDone = true; $('next').disabled = false; feedback('Now you know how it sounds.', 'good'); }
 });
-// the scale picker: any thaat, lit on the keys and set on the FM-1 too
-THAAT.forEach((t, i) => { const o = document.createElement('option'); o.value = i; o.textContent = `${t.name}: ${t.mode.split(':')[0].replace('the C major scale (Ionian mode)', 'C major')}`; $('scaleSel').appendChild(o); });
-{ const o = document.createElement('option'); o.value = -1; o.textContent = 'All 12 notes (chromatic)'; $('scaleSel').prepend(o); }
-$('scaleSel').addEventListener('change', (e) => {
-  scaleOverride = +e.target.value;
-  if (scaleOverride >= 0) cc(21, scaleOverride);
+$('hint').addEventListener('click', () => {
+  hintShown = true;
+  feedback(task && task.hintText ? task.hintText() : 'The note is circled on the mala, the piano and the neck, and it blinks on the FM-1.', '');
   drawAll();
 });
-document.querySelectorAll('.seg button').forEach((b) => b.addEventListener('click', () => {
-  labelMode = b.dataset.l;
-  document.querySelectorAll('.seg button').forEach((x) => x.classList.toggle('on', x === b));
-  try { localStorage.setItem('bhn-coach-labels', labelMode); } catch {}
-  drawAll();
-}));
-try { const l = localStorage.getItem('bhn-coach-labels'); if (l) document.querySelector(`.seg button[data-l="${l}"]`).click(); } catch {}
-
+$('backing').addEventListener('click', () => {
+  if (clock.id) { const id = clock.id; backingStop(); $('backing').dataset.id = id; $('backing').textContent = 'Start the backing'; }
+  else { onGesture(); backingStart($('backing').dataset.id || acc('backing', null) || 'drone'); $('backing').textContent = 'Stop the backing'; }
+  syncFM1(false);
+});
 $('next').addEventListener('click', () => {
-  if (s < UNITS[u].steps.length - 1) s++;
-  else { done[u] = true; if (u < UNITS.length - 1) { u++; s = 0; } }
+  if (s < UNITS()[u].steps.length - 1) s++;
+  else { done[path][u] = true; if (u < UNITS().length - 1) { u++; s = 0; } }
   openStep(false);
 });
 $('back').addEventListener('click', () => {
-  if (s > 0) s--; else if (u > 0) { u--; s = UNITS[u].steps.length - 1; }
+  if (s > 0) s--; else if (u > 0) { u--; s = UNITS()[u].steps.length - 1; }
   openStep(true);
 });
-$('demo').addEventListener('click', playDemo);
+
+// ================================================================== the jam room
+Object.entries(BACKINGS).forEach(([id, b]) => { const o = document.createElement('option'); o.value = id; o.textContent = b.name; $('jamBacking').appendChild(o); });
+$('jamBacking').value = 'pop';
+let jamFrom = 0, jamPhrasesFrom = 0;
+function openJam() {
+  view = 'jam'; showView(); resetListening(); backingStop();
+  const b = BACKINGS[$('jamBacking').value];
+  SA = b.sa; jamScale = b.scale; scaleOverride = null; $('scaleSel').value = String(jamScale);
+  $('jamTempo').value = b.bpm || 80; $('jamBpm').textContent = $('jamTempo').value;
+  $('jamGo').textContent = 'Start'; renderJamChord(); syncFM1(true); renderRail(); drawAll(); save();
+}
+function renderJamChord() {
+  const box = $('jamChord');
+  if (!clock.b) { box.innerHTML = '<span class="tones" style="color:var(--mist)">Press Start, then play. Nothing is wrong in here; the colours just show you what each note is doing.</span>'; return; }
+  if (clock.b.kind === 'drone') { box.innerHTML = `<span class="big">Sa = ${LETTER[SA]}</span><span class="tones">the drone holds Sa and Pa: those are your landings</span>`; return; }
+  if (clock.b.kind === 'pulse') { box.innerHTML = `<span class="big">${clock.bpm}</span><span class="tones">beats a minute. The louder click is beat 1 (sam).</span>`; return; }
+  const c = chordNow;
+  box.innerHTML = c ? `<span class="big">${c.name}</span><span class="tones">${c.pcs.map((p) => LETTER[p]).join(' ')}</span><span class="sarg">${c.pcs.map((p) => SARG_S[rel(p)]).join(' ')}</span>` : '';
+}
+$('jamBacking').addEventListener('change', () => { const was = !!clock.b; openJam(); if (was) $('jamGo').click(); });
+$('jamTempo').addEventListener('input', () => { $('jamBpm').textContent = $('jamTempo').value; });
+$('jamTempo').addEventListener('change', () => { if (clock.b) backingStart($('jamBacking').value, +$('jamTempo').value); });
+$('jamGo').addEventListener('click', () => {
+  onGesture();
+  if (clock.b) { backingStop(); $('jamGo').textContent = 'Start'; }
+  else {
+    backingStart($('jamBacking').value, +$('jamTempo').value); $('jamGo').textContent = 'Stop';
+    jamFrom = allNotes.length; jamPhrasesFrom = phrases.length; weights.fill(0); $('jamOut').innerHTML = '';
+  }
+  syncFM1(false); renderJamChord(); drawAll();
+});
+$('jamReflect').addEventListener('click', () => { $('jamOut').innerHTML = reflect(allNotes.slice(jamFrom), phrases.slice(jamPhrasesFrom)); });
+function reflect(ns, ps) {
+  if (ns.length < 10 || ps.length < 2) return '<p>Play a little longer first: a few phrases, with pauses between them.</p>';
+  const avg = ns.length / ps.length, landed = ps.filter((p) => p[p.length - 1].func === 'land').length, outs = ns.filter((n) => n.func === 'out').length;
+  const distinct = new Set(ns.map((n) => n.pc)).size;
+  const iois = ns.slice(1).map((n, i) => n.t - ns[i].t).filter((x) => x < 1.5);
+  const mean = iois.reduce((a, b) => a + b, 0) / Math.max(iois.length, 1), sd = Math.sqrt(iois.reduce((a, b) => a + (b - mean) ** 2, 0) / Math.max(iois.length, 1)), cv = sd / (mean || 1);
+  const top = [...weights.keys()].sort((a, b) => weights[b] - weights[a]).slice(0, 2).filter((pc) => weights[pc] > 0);
+  const lines = [
+    `<b>${ns.length} notes in ${ps.length} phrases</b>, about ${Math.round(avg)} notes each.`,
+    `<b>${landed} of ${ps.length}</b> phrases ended on a landing note.`,
+    top.length ? `You leaned most on <b>${top.map((pc) => `${LETTER[pc]} (${SARGAM[rel(pc)]})`).join(' and ')}</b>: ${FEEL[rel(top[0])]}.` : '',
+    outs ? `${outs} note${outs > 1 ? 's were' : ' was'} outside the scale or chord.` : 'Nothing went outside.',
+  ];
+  let tip;
+  if (avg > 9) tip = 'Your phrases were long. Try sentences of 3 to 6 notes, and let the silence after them count.';
+  else if (landed / ps.length < 0.4) tip = 'Most phrases ended away from home. Before each phrase, pick a landing note (a chord tone, or Sa or Pa) and aim for it.';
+  else if (distinct <= 3) tip = 'You stayed with very few notes, which is a good start. Next time, let one new note in and see what it changes.';
+  else if (cv < 0.3) tip = 'Your notes were all about the same length. Mix long and short: hold a landing note, rush through passing notes.';
+  else if (outs / ns.length > 0.15) tip = 'Lots of outside notes. Tension is good when it resolves: follow an outside note with a step to a landing note.';
+  else tip = 'Next time, take a phrase you liked and develop it: play it again from a new note, or with a new rhythm.';
+  return lines.filter(Boolean).map((l) => `<p>${l}</p>`).join('') + `<p><b>Try this:</b> ${tip}</p>`;
+}
+// the beat, shown as four dots
+(function beatLoop() {
+  const b = beatOf(tnow()), show = clock.b && clock.b.kind !== 'drone' && b >= 0;
+  for (const id of ['beatDots', 'jamBeats']) {
+    const box = $(id);
+    box.hidden = !show;
+    if (show) [...box.children].forEach((d, i) => d.classList.toggle('on', Math.floor(b) % 4 === i));
+  }
+  requestAnimationFrame(beatLoop);
+})();
+
+// ================================================================== the dictionary
+function renderDict() {
+  const f = $('dictFind').value.trim().toLowerCase();
+  $('dictRows').innerHTML = DICT.filter((r) => !f || r.join(' ').toLowerCase().includes(f)).map((r) => `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td></tr>`).join('');
+}
+function openDict() { view = 'dict'; showView(); renderDict(); renderRail(); save(); }
+$('dictFind').addEventListener('input', renderDict);
+
+// ================================================================== the scale picker, labels, instrument
+{ const o = document.createElement('option'); o.value = -1; o.textContent = 'All 12 notes'; $('scaleSel').appendChild(o); }
+SCALES.forEach((t, i) => { const o = document.createElement('option'); o.value = i; o.textContent = `${scaleTitle(i)}: ${t.west.split(':')[0]}`; $('scaleSel').appendChild(o); });
+$('scaleSel').addEventListener('change', (e) => { scaleOverride = +e.target.value; if (scaleOverride >= 0) sendCC(21, SCALES[scaleOverride].fm1); drawAll(); });
+$('hearScale').addEventListener('click', () => {
+  const pcs = scaleRel(), base = 60 + SA - (SA > 6 ? 12 : 0), up = [...pcs.map((p) => base + p), base + 12];
+  playNotes([...up, ...up.slice(0, -1).reverse()].map((m, i, a) => [m, i === a.length - 1 || i === up.length - 1 ? 700 : 330]));
+});
+document.querySelectorAll('#labelSeg button').forEach((b) => {
+  b.classList.toggle('on', b.dataset.l === labelMode);
+  b.addEventListener('click', () => { labelMode = b.dataset.l; document.querySelectorAll('#labelSeg button').forEach((x) => x.classList.toggle('on', x === b)); save(); drawAll(); });
+});
+document.querySelectorAll('#instSeg button').forEach((b) => {
+  b.classList.toggle('on', b.dataset.i === instMode);
+  b.addEventListener('click', () => { instMode = b.dataset.i; document.querySelectorAll('#instSeg button').forEach((x) => x.classList.toggle('on', x === b)); save(); drawAll(); });
+});
+// the on-screen piano plays too
+$('piano').addEventListener('pointerdown', (e) => {
+  const m = +(e.target.getAttribute && e.target.getAttribute('data-m'));
+  if (!m) return;
+  onGesture();
+  if (midiOut) midiOut.send([0x90, m, 96]); else pluck(m);
+  noteOn(m, 'screen');
+  const up = () => { if (midiOut) midiOut.send([0x80, m, 0]); noteOff(m); removeEventListener('pointerup', up); };
+  addEventListener('pointerup', up);
+});
 $('connect').addEventListener('click', () => { setConn(false, 'Looking for the FM-1...'); setTimeout(() => connect(true), 400); });
 
-// the on-screen piano works too, for trying a step without the FM-1
-for (const id of ['piano']) {
-  $(id).addEventListener('pointerdown', (e) => {
-    const m = +(e.target.getAttribute && e.target.getAttribute('data-m'));
-    if (!m) return;
-    if (midiOut) midiOut.send([0x90, m, 96]); else pluck(m);
-    noteOn(m, 'you');
-    const up = () => { if (midiOut) midiOut.send([0x80, m, 0]); noteOff(m); window.removeEventListener('pointerup', up); };
-    window.addEventListener('pointerup', up);
-  });
-}
-
-openStep(true);
+if (view === 'jam') openJam(); else if (view === 'dict') openDict(); else openStep(true);
 connect(false);
 }
 </script>

@@ -27,16 +27,19 @@ harmonic) they share, as a sarod's taraf strings do.
 
 ## The Coach
 
-[coach.html](https://mattrosica-gif.github.io/be-here-now-fm1/coach.html) runs in Chrome next to the FM-1 (plugged
-in by USB): a guided course in Western and Indian music side by side, nine units from the tonic to a first raga
-and taal. It hears what you play, names every note in both languages, lights the scale on a mala, a piano and a
-guitar neck, and sets up the FM-1 for each step over MIDI control changes (needs firmware 0.8):
+[coach.html](https://mattrosica-gif.github.io/be-here-now-fm1/coach.html) runs in Chrome next to the FM-1 (plugged in
+by USB), or with a guitar or piano through the computer's microphone. It teaches how to think and improvise in both
+traditions: Think and improvise (gravity and landing notes, fewer notes, developing ideas, question and answer,
+rhythm and space, chords, the pentatonic, ornaments, raga habits), a Jam room with backing tracks and live feedback,
+Why it works (frequency, overtones, ratios, major and minor, the chain of fifths, equal temperament, the string), a
+two-language dictionary and the basics. It never lights the answer unless you ask for a hint. The FM-1 talks to it
+over MIDI control changes (firmware 1.0):
 
 ```
-  CC 20  Sa (0..11)              CC 25 / 26  notes that blink on the keys (what the lesson wants next)
-  CC 21  thaat (0..9)            CC 27 / 28  notes lit steadily (the scale), pitch-class masks from C
+  CC 20  Sa (0..11)              CC 25 / 26  notes that blink on the keys (a hint)
+  CC 21  thaat (0..9)            CC 27 / 28  notes lit steadily (the scale or chord), pitch-class masks from C
   CC 22  drone (>= 64 on)        CC 29       >= 64 keeps the Coach's lights on (sent every 2 s)
-  CC 23  mode (>= 64 Chord)
+  CC 23  mode (>= 64 Chord)      the FM-1 sends CC 20..23 back when you turn PRESETS or ALGORITHM, or press SEL or PLAY
   CC 24  Learn mode (>= 64 on)
 ```
 

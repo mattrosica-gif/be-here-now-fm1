@@ -23,7 +23,8 @@
  * with control changes: CC 20 Sa (0..11), CC 21 thaat (0..9), CC 22 drone (>= 64 on), CC 23 mode (>= 64 Chord),
  * CC 24 Learn mode (>= 64 on). The key lights follow the Coach while it is open: CC 25 / 26 the notes that blink
  * (what the lesson wants next) and CC 27 / 28 the notes lit steadily (the scale on its screen), each a mask of
- * pitch classes from C (25 and 27: C..F#, bit 0 = C; 26 and 28: G..B, bit 0 = G); CC 29 >= 64 keeps them on,
+ * pitch classes from C (25 and 27: C..F#, bit 0 = C; 26 and 28: G..B, bit 0 = G); turning PRESETS or ALGORITHM, and
+ * SEL and PLAY, send the same CC 20..23 back, so the Coach follows the FM-1; CC 29 >= 64 keeps them on,
  * sent every 2 s, and 3 s of silence (or CC 29 < 64, or Learn mode) gives the lights back to the FM-1.
  *   keys        play; in Sarod mode press a key while holding another to slide (meend)
  *   key lights  the notes of the thaat
@@ -118,6 +119,9 @@ typedef struct {
   int32_t pk;    /* this block's loudest sample */
 } string_t;
 #define SLEEP 12
+/* the sympathetic strings ring about 4 s on Sa, as a sarod's taraf does (they rang ~10 s, and a drone kept them humming) */
+#define TARAF_FB 32560
+#define TARAF_SHIFT 8
 
 static int16_t lead_buf[2048] POOL;
 static int16_t chord_buf[4][2048] POOL;
@@ -333,7 +337,7 @@ void audio(int32_t *out, uint32_t frames) {
   static int32_t lead_pitch;
   int32_t tone_a = 4096 + saved.knob[0] * 96;
   int32_t fb = 32760 - (127 - saved.knob[2]) * 4;
-  int32_t taraf_level = saved.knob[1];
+  int32_t taraf_level = saved.knob[1] * saved.knob[1] / 127; /* a gentle curve: the middle is a faint halo */
   int32_t pluck_tone = 3000 + saved.knob[0] * 105;
   int32_t drone_gain = saved.drone_lvl * 22; /* 0..176, /512 */
   static const int32_t RV_FB[3] = {28300, 25000, 0}, RV_WET[3] = {150, 90, 0};
@@ -460,19 +464,22 @@ void audio(int32_t *out, uint32_t frames) {
     /* the skin colours what is plucked */
     int32_t sk = played + ((svf_bp(&body[0], played) * 7000) >> 15) + ((svf_bp(&body[1], played) * 6000) >> 15) +
                  ((svf_bp(&body[2], played) * 4200) >> 15);
-    /* the sympathetic strings: excited by everything, ringing only where they agree with it */
-    int32_t excite = (played + (dr >> 1)) >> 8, l = 0, r = 0;
-    for (v = 0; v < 11; v++) {
-      y = string_step(&taraf[v], excite);
-      peak(&pk_taraf[v], y);
-      if (v & 1) {
-        l += y;
-      } else {
-        r += y;
+    /* the sympathetic strings: they answer what you play (the drone only brushes them), ringing only where they agree
+     * with it; a halo under the music, not over it. At KNOB2 = 0 they rest and cost nothing */
+    int32_t excite = (played + (dr >> 5)) >> 8, l = 0, r = 0;
+    if (taraf_level) {
+      for (v = 0; v < 11; v++) {
+        y = string_step(&taraf[v], excite);
+        peak(&pk_taraf[v], y);
+        if (v & 1) {
+          l += y;
+        } else {
+          r += y;
+        }
       }
+      l = (l * taraf_level) >> TARAF_SHIFT;
+      r = (r * taraf_level) >> TARAF_SHIFT;
     }
-    l = (l * taraf_level) >> 7;
-    r = (r * taraf_level) >> 7;
     int32_t dl = sk + (dr * 3) / 4 + l + (r >> 2) + (tb * 3) / 4, dright = sk + (dr * 3) / 4 + r + (l >> 2) + (tb * 3) / 4;
     if (rv_wet) {
       int32_t send = (dl + dright) >> 4;
@@ -1354,7 +1361,7 @@ void setup(void) {
     make_string(&drone[v], drone_buf[v], 1024, 14500, 32730, 0, 2600);
   }
   for (int v = 0; v < 11; v++) {
-    make_string(&taraf[v], taraf_buf[v], 256, 11000, 32690, 0, 0);
+    make_string(&taraf[v], taraf_buf[v], 256, 11000, TARAF_FB, 0, 0);
   }
   make_string(&chik[0], chik_buf[0], 256, 15000, 32300, AP_STIFF, 0);
   make_string(&chik[1], chik_buf[1], 256, 15000, 32200, AP_STIFF, 0);
@@ -1517,11 +1524,13 @@ void loop(void) {
     t = TIP_LESSON;
   } else if (e) {
     saved.thaat = (uint8_t)((saved.thaat + THAATS + (e > 0 ? 1 : -1)) % THAATS);
+    midi_send(0xB0, 21, saved.thaat); /* tell the Coach */
     retune = 1, changed = 1, t = TIP_THAAT;
   }
   e = encoder(ENC_ALGORITHM);
   if (e) {
     saved.sa = (uint8_t)((saved.sa + 12 + (e > 0 ? 1 : -1)) % 12);
+    midi_send(0xB0, 20, saved.sa);
     retune = 1, changed = 1, t = TIP_SA;
   }
   e = encoder(ENC_SELECT);
@@ -1538,6 +1547,7 @@ void loop(void) {
   }
   if (button_pressed(BTN_SEL) && !learn) {
     saved.mode ^= 1;
+    midi_send(0xB0, 23, saved.mode == MODE_CHORD ? 127 : 0);
     depth = 0, lead_held = 0;
     changed = 1, t = TIP_MODE;
   }
@@ -1546,6 +1556,7 @@ void loop(void) {
       learn_play(now);
     } else {
       drone_on ^= 1;
+      midi_send(0xB0, 22, drone_on ? 127 : 0);
       t = TIP_DRONE;
     }
   }
