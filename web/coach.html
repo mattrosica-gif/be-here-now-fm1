@@ -1102,7 +1102,7 @@ const TASKS = {
   echo() {
     const lens = [3, 4, 5];
     let round = 0, want = [], tries = 0;
-    const playIt = () => playNotes(want.map((m) => [m, 430]));
+    const playIt = () => playNotes(want.map((m) => [m, 430]), true);
     const make = () => {
       const degs = [...scaleOrder(), ...scaleOrder().map((x) => x + 12)], base = 60 + SA - (SA > 6 ? 12 : 0);
       let i = 0; want = [];
@@ -1170,7 +1170,7 @@ const TASKS = {
   ask() {
     const Q = [[0, 2, 4, 5], [7, 9, 11], [4, 5, 7, 9, 7, 5, 2]];
     let round = 0;
-    const playIt = () => playNotes(Q[round].map((r) => [60 + SA + r, 380]));
+    const playIt = () => playNotes(Q[round].map((r) => [60 + SA + r, 380]), true);
     return {
       start: () => setTimeout(playIt, 600), replay: playIt,
       phrase(p) {
@@ -1865,15 +1865,16 @@ function openStep(full) {
   instPicked = false; markInst();
   renderProgress(); renderRail(); drawAll(); save();
 }
-async function playNotes(list) {
+// play notes for you; an ear test (hidden) plays from the computer with nothing lit, so neither the screen
+// nor the FM-1's own display gives the answer away
+async function playNotes(list, hidden) {
   if (demoBusy) return;
   demoBusy = true; phrase = [];
   for (const [m, ms] of list) {
-    if (midiOut) midiOut.send([0x90, m, 96]); else pluck(m);
-    noteOn(m, 'demo');
+    if (hidden) pluck(m, 0.3);
+    else { if (midiOut) midiOut.send([0x90, m, 96]); else pluck(m); noteOn(m, 'demo'); }
     await new Promise((r) => setTimeout(r, ms));
-    if (midiOut) midiOut.send([0x80, m, 0]);
-    noteOff(m);
+    if (!hidden) { if (midiOut) midiOut.send([0x80, m, 0]); noteOff(m); }
   }
   demoBusy = false; demoQuietUntil = tnow() + 0.5; lastNote = null; phrase = [];
   drawAll();
