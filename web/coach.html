@@ -271,7 +271,7 @@ input[type=range] { accent-color: var(--marigold); width: 160px; vertical-align:
         <div class="keys">
           <div class="fig"><h4>Piano</h4><svg id="piano" role="img" aria-label="Piano keyboard"></svg></div>
           <div class="fig"><h4><span id="instTitle">Sarod</span>
-            <span class="seg" role="group" aria-label="Which instrument to show" id="instSeg"><button data-i="auto" class="on">Follow the FM-1</button><button data-i="sarod">Sarod</button><button data-i="guitar">Guitar</button></span></h4>
+            <span class="seg" role="group" aria-label="Which instrument to show" id="instSeg"><button data-i="guitar" class="on">Guitar</button><button data-i="sarod">Sarod</button></span></h4>
             <svg id="inst" role="img" aria-label="Where the note lies on the instrument"></svg></div>
           <div class="legend">
             <span><i style="background:#f4ecd8"></i>in the scale</span>
@@ -619,14 +619,14 @@ const DICT = [
 const $ = (id) => document.getElementById(id);
 const PATHS = { imp: IMP, why: WHY, basic: BASIC };
 const PATH_NAME = { imp: 'Think and improvise', why: 'Why it works', basic: 'Basics' };
-let path = 'imp', u = 0, s = 0, view = 'unit', done = { imp: {}, why: {}, basic: {} }, labelMode = 'names', instMode = 'auto';
+let path = 'imp', u = 0, s = 0, view = 'unit', done = { imp: {}, why: {}, basic: {} }, labelMode = 'names', instMode = 'guitar', instPicked = false;
 try {
   const v = JSON.parse(localStorage.getItem('bhn-coach2') || '{}');
   if (PATHS[v.path] && PATHS[v.path][v.u] && PATHS[v.path][v.u].steps[v.s]) { path = v.path; u = v.u; s = v.s; }
   if (['unit', 'jam', 'dict'].includes(v.view)) view = v.view;
   if (v.done) done = Object.assign(done, v.done);
   if (v.labelMode) labelMode = v.labelMode;
-  if (v.instMode) instMode = v.instMode;
+  if (v.instMode === 'sarod' || v.instMode === 'guitar') instMode = v.instMode;
 } catch {}
 const save = () => { try { localStorage.setItem('bhn-coach2', JSON.stringify({ path, u, s, view, done, labelMode, instMode })); } catch {} };
 const UNITS = () => PATHS[path];
@@ -1681,11 +1681,10 @@ function drawPiano() {
     }
   }
 }
+// the guitar, whatever you play, unless you switch to the sarod (a lesson about the sarod shows it until you choose)
 function instNow() {
-  if (instMode !== 'auto') return instMode;
-  if (view === 'unit' && acc('inst', null)) return acc('inst', null);
-  if (lastSrc === 'mic') return 'guitar';
-  return fm1Mode === 'chord' ? 'guitar' : 'sarod';
+  if (view === 'unit' && !instPicked && acc('inst', null)) return acc('inst', null);
+  return instMode;
 }
 const STRINGS = [64, 59, 55, 50, 45, 40];
 function drawGuitar(svg) {
@@ -1773,6 +1772,7 @@ function drawSarod(svg) {
 }
 function drawInst() {
   const which = instNow(), svg = $('inst');
+  markInst();
   $('instTitle').textContent = which === 'sarod' ? 'Sarod: where the fingernail goes' : 'Guitar (standard tuning, high E string at the top)';
   if (which === 'sarod') drawSarod(svg); else drawGuitar(svg);
 }
@@ -1862,6 +1862,7 @@ function openStep(full) {
   $('backing').hidden = !backing; $('backing').textContent = 'Stop the backing';
   syncFM1(full);
   if (task && task.start) task.start();
+  instPicked = false; markInst();
   renderProgress(); renderRail(); drawAll(); save();
 }
 async function playNotes(list) {
@@ -1990,9 +1991,9 @@ document.querySelectorAll('#labelSeg button').forEach((b) => {
   b.classList.toggle('on', b.dataset.l === labelMode);
   b.addEventListener('click', () => { labelMode = b.dataset.l; document.querySelectorAll('#labelSeg button').forEach((x) => x.classList.toggle('on', x === b)); save(); drawAll(); });
 });
+function markInst() { document.querySelectorAll('#instSeg button').forEach((x) => x.classList.toggle('on', x.dataset.i === instNow())); }
 document.querySelectorAll('#instSeg button').forEach((b) => {
-  b.classList.toggle('on', b.dataset.i === instMode);
-  b.addEventListener('click', () => { instMode = b.dataset.i; document.querySelectorAll('#instSeg button').forEach((x) => x.classList.toggle('on', x === b)); save(); drawAll(); });
+  b.addEventListener('click', () => { instMode = b.dataset.i; instPicked = true; markInst(); save(); drawAll(); });
 });
 // the on-screen piano plays too
 $('piano').addEventListener('pointerdown', (e) => {
