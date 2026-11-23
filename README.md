@@ -40,8 +40,11 @@ over MIDI control changes (firmware 1.0):
   CC 21  thaat (0..9)            CC 27 / 28  notes lit steadily (the scale or chord), pitch-class masks from C
   CC 22  drone (>= 64 on)        CC 29       >= 64 keeps the Coach's lights on (sent every 2 s)
   CC 23  mode (>= 64 Chord)      the FM-1 sends CC 20..23 back when you turn PRESETS or ALGORITHM, or press SEL or PLAY
-  CC 24  Learn mode (>= 64 on)
+  CC 24  Learn mode (>= 64 on)     CC 30  asks what the firmware can do (1.1 answers 11)
+
+  MIDI channel 2: backing chords, plucked on the chord strings   channel 10: tabla strokes (Dha, Na, Ge, Tin, Ti, Ka, Dhin)
 ```
+With firmware 1.1 the Coach's backing (the beat and the chords) plays on the FM-1 itself, so it is in your headphones.
 
 Push to GitHub and set Settings → Pages → Source: GitHub Actions; every push builds the emulator and the FM-1 package. A tag (v0.1) makes a release with the .fwsc. Pick your own `identity` in firmware.json before sharing (FM-1_86 is a placeholder).
 

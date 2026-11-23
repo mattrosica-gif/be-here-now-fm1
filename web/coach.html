@@ -741,15 +741,23 @@ function backingStop() {
   if (clock.b && clock.b.kind === 'drone') droneOff();
   clock.id = null; clock.b = null; chordNow = null;
 }
+// a chord for the FM-1's four chord strings: the root low, three of its notes above middle C
+function voicing(c) {
+  const up = c.pcs.length > 3 ? [c.pcs[0], c.pcs[1], c.pcs[3]] : c.pcs;
+  return [48 + c.root, ...up.map((pc) => 60 + pc)];
+}
 function schedule() {
   if (!clock.b || actx.state !== 'running') return;
-  const b = clock.b, ahead = actx.currentTime + 0.15;
+  const b = clock.b, ahead = actx.currentTime + 0.15, onFm1 = midiOut && fm1Backing;
   while (clock.t0 + clock.beat * spb() < ahead) {
-    const i = clock.beat, t = clock.t0 + i * spb();
-    click(t, i % 4 === 0, b.kind === 'chords' ? 0.6 : 1);
+    const i = clock.beat, t = clock.t0 + i * spb(), at = performance.now() + (t - actx.currentTime) * 1000;
+    if (onFm1) { // the FM-1 plays the backing, so it is in your headphones: tabla for the beat, its chord strings strummed
+      midiOut.send([0x99, i % 4 === 0 ? 36 : 38, 100], at);
+      if (b.kind === 'chords' && i % 2 === 0) voicing(b.prog[Math.floor(i / b.beats) % b.prog.length]).forEach((m) => midiOut.send([0x91, m, 50], at));
+    } else click(t, i % 4 === 0, b.kind === 'chords' ? 0.6 : 1);
     if (b.kind === 'chords' && i % b.beats === 0) {
       const c = b.prog[(i / b.beats) % b.prog.length];
-      pad(c, t, b.beats * spb());
+      if (!onFm1) pad(c, t, b.beats * spb());
       setTimeout(() => { if (clock.b === b) { chordNow = c; onChord(); } }, Math.max(0, (t - actx.currentTime) * 1000));
     }
     clock.beat++;
@@ -792,7 +800,7 @@ addEventListener('pointerdown', onGesture);
 addEventListener('keydown', onGesture);
 
 // ================================================================== the FM-1 over MIDI
-let midiOut = null, midiIn = null, fm1Mode = 'sarod';
+let midiOut = null, midiIn = null, fm1Mode = 'sarod', fm1Backing = false; // fm1Backing: firmware 1.1 plays the backing itself
 const sent = {};
 const cc = (n, v) => midiOut && midiOut.send([0xb0, n, v]);
 function sendCC(n, v, force) { if (!midiOut) return; if (!force && sent[n] === v) return; sent[n] = v; cc(n, v); }
@@ -806,7 +814,9 @@ async function connect(ask) {
       midiIn = pick(access.inputs); midiOut = pick(access.outputs);
       if (midiIn) midiIn.onmidimessage = onMidi;
       setConn(!!midiIn, midiIn ? `FM-1 connected (${midiIn.name})` : 'Chrome sees no MIDI device. Plug the FM-1 in with a data cable, then press Connect again.');
+      fm1Backing = false;
       if (midiOut) {
+        cc(30, 0); // can this FM-1 play the backing? (it answers CC 30 = 11)
         for (const k in sent) delete sent[k];
         if (droneTimer) { clearInterval(droneTimer); droneTimer = 0; }
         syncFM1(true); sentLights = ''; sendLights();
@@ -828,6 +838,7 @@ function onMidi(e) {
     if (d1 === 20) { SA = d2 % 12; }
     if (d1 === 21 && d2 < 10) { scaleOverride = d2; $('scaleSel').value = String(d2); }
     if (d1 === 23) { fm1Mode = d2 >= 64 ? 'chord' : 'sarod'; }
+    if (d1 === 30) { fm1Backing = d2 >= 11; return; }
     drawAll();
   }
 }

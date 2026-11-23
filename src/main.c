@@ -24,7 +24,9 @@
  * CC 24 Learn mode (>= 64 on). The key lights follow the Coach while it is open: CC 25 / 26 the notes that blink
  * (what the lesson wants next) and CC 27 / 28 the notes lit steadily (the scale on its screen), each a mask of
  * pitch classes from C (25 and 27: C..F#, bit 0 = C; 26 and 28: G..B, bit 0 = G); turning PRESETS or ALGORITHM, and
- * SEL and PLAY, send the same CC 20..23 back, so the Coach follows the FM-1; CC 29 >= 64 keeps them on,
+ * SEL and PLAY, send the same CC 20..23 back, so the Coach follows the FM-1; CC 30 asks what the firmware can do
+ * (answer CC 30 = 11). Notes on MIDI channel 2 are the Coach's backing chords, plucked on the chord strings, and
+ * notes on channel 10 are tabla strokes (by note % 12: 0-1 Dha, 2-3 Na, 4 Ge, 5-6 Tin, 7-8 Ti, 9-10 Ka, 11 Dhin); CC 29 >= 64 keeps them on,
  * sent every 2 s, and 3 s of silence (or CC 29 < 64, or Learn mode) gives the lights back to the FM-1.
  *   keys        play; in Sarod mode press a key while holding another to slide (meend)
  *   key lights  the notes of the thaat
@@ -303,6 +305,7 @@ static string_t dayan;             /* the right drum: a short, bright string tun
 static int32_t bay_amp;            /* the left drum: a low boom that falls in pitch */
 static uint32_t bay_ph, bay_inc, bay_end;
 
+static volatile uint8_t tabla_q[8], tabla_w, tabla_r; /* tabla strokes asked for over MIDI, for audio() to play */
 static void tabla_hit(int bol) {
   if (BOL_BAYAN[bol]) {
     bay_amp = 15000, bay_inc = note_inc(46), bay_end = note_inc(39);
@@ -349,6 +352,10 @@ void audio(int32_t *out, uint32_t frames) {
     return;
   }
   uint32_t t_start = micros();
+  while (tabla_r != tabla_w) { /* the Coach's tabla, on its beat */
+    tabla_hit(tabla_q[tabla_r & 7]);
+    tabla_r++;
+  }
   static int32_t rv_quiet;
 
   if (retune) { /* the thaat or Sa changed: retune the sympathetic, drone and chikari strings */
@@ -1284,6 +1291,19 @@ static void play_on(int note, int vel) {
   }
 }
 
+/* the Coach's backing (MIDI channel 2): plucked on the chord strings, which Sarod mode leaves free */
+static void backing_on(int note, int vel) {
+  int pick = 0;
+  for (int v = 0; v < 4; v++) {
+    chord_age[v]++;
+    if (chord_age[v] > chord_age[pick]) {
+      pick = v;
+    }
+  }
+  chord_age[pick] = 0, chord_voice[pick] = (uint8_t)note;
+  chord_note[pick] = (uint32_t)note, chord_vel[pick] = (uint32_t)vel, chord_plucks[pick]++;
+}
+
 static void play_off(int note) {
   int i, j;
   for (i = j = 0; i < depth; i++) {
@@ -1434,7 +1454,17 @@ void loop(void) {
   static uint16_t coach_blink, coach_lit;           /* the Coach's key lights, pitch classes from C */
   static uint32_t coach_until;
   while (midi_read(&st, &d1, &d2)) {
-    if ((st & 0xF0) == 0x90 && d2) {
+    if ((st & 0xF0) == 0x90 && d2 && (st & 0x0F) == 1) { /* channel 2: the Coach's backing chords */
+      backing_on(d1, d2);
+    } else if ((st & 0xF0) == 0x90 && d2 && (st & 0x0F) == 9) { /* channel 10: the Coach's tabla */
+      static const uint8_t BOL_OF[12] = {B_DHA, B_DHA, B_NA, B_NA, B_GE, B_TIN, B_TIN, B_TI, B_TI, B_KA, B_KA, B_DHIN};
+      if ((uint8_t)(tabla_w - tabla_r) < 8) {
+        tabla_q[tabla_w & 7] = BOL_OF[d1 % 12];
+        tabla_w++;
+      }
+    } else if ((st & 0x0F) == 1 || (st & 0x0F) == 9) {
+      /* their note-offs: plucked strings and drums just ring out */
+    } else if ((st & 0xF0) == 0x90 && d2) {
       play_on(d1, d2);
     } else if ((st & 0xF0) == 0x80 || (st & 0xF0) == 0x90) {
       play_off(d1);
@@ -1503,6 +1533,9 @@ void loop(void) {
         break;
       case 29:
         coach_until = v >= 64 ? now + 3000 : 0;
+        break;
+      case 30: /* the Coach asks what this firmware can do: 11 = backing chords (ch 2) and tabla (ch 10) */
+        midi_send(0xB0, 30, 11);
         break;
     }
   }
